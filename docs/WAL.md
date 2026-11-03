@@ -73,3 +73,4 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - negative: App build failed on Xcode 16.4 (libghostty uses UIGlassEffect from the iOS 26 SDK)
 - decided: CI selects the newest Xcode 26; README states that Xcode 26 is the minimum to build
 - open: full CI green — owner: agent, done-check: next run success
+- closed: full CI green (audit, lint, package tests, integration with real herdr, app build on Xcode 26) [source: gh run 41724552076 success]
