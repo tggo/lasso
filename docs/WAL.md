@@ -50,3 +50,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - open: notifications on a real device unverified (owner: agent, done-check: blocked agent → banner on iPhone)
 - owner: make repo public when ready: gh repo edit tggo/lasso --visibility public --accept-visibility-change-consequences
 - owner: authorize phone key on your Mac (key screen → Copy command) and add the host to try it for real
+
+## 2026-11-03 23:29 — CI first run
+- negative: CI run 41721278092 failed — LassoCore integration process exited with signal 11 during storeSeesWorkspaceAndAgentStatusLive [source: gh run view 41721278092 --log-failed]
+- done: local ASan + TSan runs of CoreIntegration clean (0 TSan warnings); found and fixed a test assumption (other blocked agents in session) [source: swift test --sanitize=thread, 3/3 pass]
+- open: is the CI segfault reproducible? — owner: agent, done-check: run 41722199411 green or crash backtrace captured
