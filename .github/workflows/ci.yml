@@ -27,6 +27,13 @@ jobs:
       - name: Package tests
         run: make test-packages
       - name: Integration (local sshd + herdr)
-        run: brew install herdr && make test-integration
+        env:
+          SWIFT_BACKTRACE: enable=yes,interactive=no,sanitize=no
+        run: |
+          brew install herdr
+          make test-integration
+      - name: herdr / sshd logs on failure
+        if: failure()
+        run: tail -50 build/it/sshd.log build/it/herdr.log || true
       - name: App build
         run: make build DEST='generic/platform=iOS Simulator'
