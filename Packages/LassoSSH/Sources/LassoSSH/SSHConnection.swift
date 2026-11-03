@@ -143,17 +143,22 @@ public final class SSHConnection: @unchecked Sendable {
                     let ch = try self.openStreamlocal(path)
                     defer { libssh2_channel_close(ch); libssh2_channel_free(ch) }
                     try self.writeAll(ch, line)
-                    // Short timeout so cancellation is noticed; timeouts are not errors here.
-                    libssh2_session_set_timeout(self.session, 500)
-                    defer { libssh2_session_set_timeout(self.session, 0) }
+                    // Non-blocking read + poll so cancellation is noticed. (Blocking reads with a
+                    // libssh2 timeout corrupted the heap on CI — the timeout path is not safe to resume.)
+                    libssh2_session_set_blocking(self.session, 0)
+                    defer { libssh2_session_set_blocking(self.session, 1) }
                     var buf = Data()
-                    var chunk = [UInt8](repeating: 0, count: 16384)
+                    var chunk = [CChar](repeating: 0, count: 16384)
                     while !cancelled.isSet {
-                        let n = libssh2_channel_read_ex(ch, 0, &chunk, chunk.count)
-                        if n == LIBSSH2_ERROR_TIMEOUT || n == LIBSSH2_ERROR_EAGAIN { continue }
+                        let n = chunk.withUnsafeMutableBufferPointer { libssh2_channel_read_ex(ch, 0, $0.baseAddress, $0.count) }
+                        if n == LIBSSH2_ERROR_EAGAIN || n == 0 {
+                            if libssh2_channel_eof(ch) != 0 { break }
+                            var pfd = pollfd(fd: self.sock, events: Int16(POLLIN), revents: 0)
+                            _ = poll(&pfd, 1, 250)
+                            continue
+                        }
                         if n < 0 { throw SSHError.io(self.err()) }
-                        if n == 0 { if libssh2_channel_eof(ch) != 0 { break } else { continue } }
-                        buf.append(contentsOf: chunk[0 ..< n])
+                        chunk.withUnsafeBytes { buf.append(contentsOf: $0.prefix(n)) }
                         while let nl = buf.firstIndex(of: 0x0A) {
                             cont.yield(buf.subdata(in: buf.startIndex ..< nl))
                             buf.removeSubrange(buf.startIndex ... nl)
