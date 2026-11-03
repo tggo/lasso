@@ -35,6 +35,8 @@ For a named herdr session, fill in *Session name*. A custom socket goes in *Sock
 
 ## Build
 
+Needs Xcode 26+ on Apple silicon (iOS 26 SDK; the app runs on iOS 18+).
+
 ```sh
 make bootstrap         # xcodegen, swiftlint, swiftformat, cmake + make native (~2 min)
 make build             # simulator build

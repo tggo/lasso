@@ -9,6 +9,10 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 26 (libghostty needs the iOS 26 SDK)
+        run: |
+          x=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          echo "using $x"; sudo xcode-select -s "$x"; xcodebuild -version
       - name: Tools
         run: brew install xcodegen swiftlint swiftformat cmake || true
       - name: Cache native libs

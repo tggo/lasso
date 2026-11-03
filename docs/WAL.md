@@ -67,3 +67,9 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - decided: event stream now uses non-blocking libssh2 reads plus poll(250 ms), because resuming blocking reads after LIBSSH2_ERROR_TIMEOUT is unsafe
 - done: local integration tests green and 3x ASan green [source: make test-integration]
 - open: CI green on run 41723607778 — owner: agent, done-check: gh run view shows success
+
+## 2026-11-03 23:44 — CI
+- done: integration step green after the non-blocking fix [source: run 41723607778, step Integration passed]
+- negative: App build failed on Xcode 16.4 (libghostty uses UIGlassEffect from the iOS 26 SDK)
+- decided: CI selects the newest Xcode 26; README states that Xcode 26 is the minimum to build
+- open: full CI green — owner: agent, done-check: next run success
