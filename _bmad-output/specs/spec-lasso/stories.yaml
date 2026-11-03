@@ -1,0 +1,71 @@
+# Epic 1 — Foundation: auditable SSH (CAP-9, CAP-1)
+- id: "1-1"
+  title: make native — OpenSSL + libssh2 from pinned source
+  description: >-
+    native/Sources.lock + build script producing iOS device/simulator xcframeworks (gitignored); make native-verify re-checks hashes. Implements CAP-9 constraints.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    Heeler's Packages/HeelerSSH/scripts/build-native.sh (Apache-2.0) is a reference; credit it in NOTICE if code is adapted.
+- id: "1-2"
+  title: LassoSSH — connect, Ed25519 auth, TOFU host-key pinning
+  description: >-
+    Swift package wrapping libssh2 session, key auth with a Keychain ThisDeviceOnly key, fingerprint pin and hard-stop on mismatch (CAP-1).
+  spec_checkpoint: true
+- id: "1-3"
+  title: LassoSSH — streamlocal + exec channels, bounded queue
+  description: >-
+    direct-streamlocal channel to herdr.sock, exec channel with optional PTY, at most 8 concurrent channels; integration test against local herdr via make test-integration.
+  done_checkpoint: true
+# Epic 2 — Agents (CAP-2, CAP-3, CAP-4, CAP-8)
+- id: "2-1"
+  title: HerdrKit client — typed snapshot, agents, requests
+  description: >-
+    HerdrClient over an injected transport: ping, session.snapshot, agent.* models decoded leniently; unit tests on recorded fixtures.
+- id: "2-2"
+  title: Host management UI
+  description: >-
+    Add/edit/delete host, show public key to copy, fingerprint confirmation sheet (CAP-1).
+- id: "2-3"
+  title: Live agent list
+  description: >-
+    events.subscribe + snapshot store, grouped by workspace, sorted by status, updates within 2 s (CAP-2, CAP-8).
+  done_checkpoint: true
+- id: "2-4"
+  title: Agent detail — output, prompt, keys
+  description: >-
+    agent.read recent view, prompt composer, key bar sending agent.send_keys (CAP-3, CAP-4).
+- id: "2-5"
+  title: Reconnect and resnapshot
+  description: >-
+    NWPathMonitor + scene phase drive reconnect; full resnapshot discards stale agents (CAP-8).
+# Epic 3 — Live terminal (CAP-5)
+- id: "3-1"
+  title: libghostty integration behind a TerminalView
+  description: >-
+    Pin libghostty-spm by revision+checksum, row in docs/dependencies.md, render a PTY byte stream.
+  spec_checkpoint: true
+- id: "3-2"
+  title: Attach to pane with key bar, takeover, resize
+  description: >-
+    herdr agent attach over exec+PTY with PATH extension and start marker; window-change on rotation (CAP-5).
+  done_checkpoint: true
+# Epic 4 — Management + notifications (CAP-6, CAP-7)
+- id: "4-1"
+  title: Start agent, workspace/tab create-rename-close
+  description: >-
+    Actions from list context menus mapped to agent.start, workspace.*, tab.* (CAP-7).
+- id: "4-2"
+  title: Local notifications on blocked/done
+  description: >-
+    Background refresh + event stream while alive; tap opens the agent (CAP-6).
+# Epic 5 — Open-source release
+- id: "5-1"
+  title: Release hygiene — NOTICE, privacy manifest, CI
+  description: >-
+    PrivacyInfo.xcprivacy with no collection, NOTICE for Apache-2.0 sources, GitHub Actions running make test-packages + make audit.
+- id: "5-2"
+  title: TestFlight and public repo
+  description: >-
+    make testflight with owner's ASC key; publish repo under the chosen org (open question).
+  spec_checkpoint: true
+  done_checkpoint: true

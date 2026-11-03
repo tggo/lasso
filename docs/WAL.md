@@ -29,3 +29,10 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 ```
 
 ---
+
+## 2026-11-03 22:34 — kickoff
+- done: scaffold (Makefile, XcodeGen, HerdrKit codec, audit gate, BMAD 6.12.4, git-dod, WAL); make build/test/test-herdrkit/audit green [source: session 2026-11-03]
+- decided: MIT; name Lasso (Cowboy Hero dropped — "Cowboy for Herdr" exists on App Store); iOS 18; libssh2+OpenSSL from pinned source; libghostty prebuilt (tracked risk)
+- done: spec _bmad-output/specs/spec-lasso (9 CAPs, 14 stories)
+- open: story 1-1 make native — owner: agent, done-check: make native produces xcframeworks
+- owner: Apple team + GitHub org for publishing; push-relay ever in scope?
