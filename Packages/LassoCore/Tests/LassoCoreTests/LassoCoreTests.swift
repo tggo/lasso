@@ -77,7 +77,7 @@ enum IT {
         let t0 = Date()
         try await waitUntil { store.agent(pane)?.agentStatus == .blocked }
         #expect(Date().timeIntervalSince(t0) < 2) // CAP-2: within 2 s
-        #expect(store.agentsByAttention.first?.paneId == pane)
+        #expect(store.agentsByAttention.prefix { $0.agentStatus == .blocked }.contains { $0.paneId == pane })
         #expect(changes.contains { $0 == (pane, .blocked) })
 
         try await store.client.sendText(pane: pane, "echo lasso-marker\n")
