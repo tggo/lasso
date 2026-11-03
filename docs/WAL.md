@@ -61,3 +61,9 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - negative: not reproducible locally, including on an empty herdr session [source: swift test --filter CoreIntegration, 3/3 pass]
 - decided: CI now prints Swift backtraces and the herdr/sshd logs on failure, because no backtrace = no diagnosis
 - open: CI segfault root cause — owner: agent, done-check: run 41722817008 backtrace read and fix green
+
+## 2026-11-03 23:38 — CI segfault fix
+- done: backtrace from run 41722817008 showed the crash in SSHConnection.unixLines, with a pointer overwritten by JSON bytes [source: gh run log, "Bad pointer dereference at 0x6c223a2264692…"]
+- decided: event stream now uses non-blocking libssh2 reads plus poll(250 ms), because resuming blocking reads after LIBSSH2_ERROR_TIMEOUT is unsafe
+- done: local integration tests green and 3x ASan green [source: make test-integration]
+- open: CI green on run 41723607778 — owner: agent, done-check: gh run view shows success
