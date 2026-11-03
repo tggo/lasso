@@ -55,3 +55,9 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - negative: CI run 41721278092 failed — LassoCore integration process exited with signal 11 during storeSeesWorkspaceAndAgentStatusLive [source: gh run view 41721278092 --log-failed]
 - done: local ASan + TSan runs of CoreIntegration clean (0 TSan warnings); found and fixed a test assumption (other blocked agents in session) [source: swift test --sanitize=thread, 3/3 pass]
 - open: is the CI segfault reproducible? — owner: agent, done-check: run 41722199411 green or crash backtrace captured
+
+## 2026-11-03 23:33 — CI debugging
+- negative: CI run 41722199411 segfaulted again in storeSeesWorkspaceAndAgentStatusLive [source: gh run view --log-failed]
+- negative: not reproducible locally, including on an empty herdr session [source: swift test --filter CoreIntegration, 3/3 pass]
+- decided: CI now prints Swift backtraces and the herdr/sshd logs on failure, because no backtrace = no diagnosis
+- open: CI segfault root cause — owner: agent, done-check: run 41722817008 backtrace read and fix green
