@@ -34,6 +34,8 @@ packages:
     path: Packages/HerdrKit
   LassoSSH:
     path: Packages/LassoSSH
+  LassoCore:
+    path: Packages/LassoCore
 
 targets:
   Lasso:
@@ -44,6 +46,7 @@ targets:
     dependencies:
       - package: HerdrKit
       - package: LassoSSH
+      - package: LassoCore
     info:
       path: App/Lasso/Info.plist
       properties:

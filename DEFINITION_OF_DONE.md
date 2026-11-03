@@ -50,3 +50,13 @@ the answer — a guessed criterion is worse than none.
 - `ping` to herdr over streamlocal returns `pong`; 25 sequential requests on one connection succeed
 - PTY echoes input and accepts resize
 **Verified:** `make test-integration` (8 tests, real sshd + herdr 0.9.5) — 2026-11-03.
+
+## Session — live herdr state over SSH (LassoCore)
+**What:** a host link (TOFU host key, device key in Keychain, `$HOME`-resolved socket) feeding a store that mirrors herdr live.
+**DoD:**
+- first connect pins the host key; a different key later fails with `HostKeyMismatch`
+- workspaces/agents appear after `start()`; a status change on the host shows in the store within 2 s
+- agents order blocked > working > done > idle; `onStatusChange` fires for each transition
+- event stream loss → backoff reconnect (1 s doubling to 30 s) and fresh snapshot
+- `attach(pane:)` streams the pane terminal through `herdr agent attach` with PATH fixed for non-login sshd
+**Verified:** `make test-integration` (LassoCore 6 tests incl. report_agent → blocked, attach echo) — 2026-11-03.

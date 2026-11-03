@@ -1,4 +1,4 @@
-.PHONY: native native-verify native-check test-ssh test-integration it-stop
+.PHONY: native native-verify native-check test-ssh test-integration it-stop test-core
 .PHONY: help bootstrap install-tools generate build build-release test test-packages test-herdrkit \
 	lint format audit open clean status device archive export testflight bump-build
 
@@ -76,11 +76,15 @@ test-integration: native-check
 	@./scripts/it-sshd.sh start
 	@env $$(./scripts/it-sshd.sh env) swift test --package-path Packages/LassoSSH
 	@env $$(./scripts/it-sshd.sh env) swift test --package-path Packages/HerdrKit
+	@env $$(./scripts/it-sshd.sh env) swift test --package-path Packages/LassoCore
 
 it-stop:
 	@./scripts/it-sshd.sh stop
 
-test-packages: test-herdrkit test-ssh
+test-core: native-check
+	swift test --package-path Packages/LassoCore
+
+test-packages: test-herdrkit test-ssh test-core
 
 lint:
 	swiftlint --quiet

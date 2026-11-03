@@ -2,9 +2,14 @@ import CryptoKit
 import Foundation
 
 /// Server host key as presented during the handshake.
-public struct HostKey: Sendable, Equatable, Codable {
+public struct HostKey: Sendable, Hashable, Codable {
     public let type: String
     public let blob: Data
+
+    public init(type: String, blob: Data) {
+        self.type = type
+        self.blob = blob
+    }
 
     public var fingerprint: String { Self.fingerprint(of: blob) }
 
