@@ -1,0 +1,72 @@
+name: CowboyHero
+
+options:
+  bundleIdPrefix: dev.cowboyhero
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_LANGUAGE: en
+    CODE_SIGN_STYLE: Automatic
+    # Set your own team in .env (DEVELOPMENT_TEAM=...) — never committed.
+    DEVELOPMENT_TEAM: ""
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+
+configs:
+  Debug:
+    SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+  Release:
+    SWIFT_COMPILATION_MODE: wholemodule
+    SWIFT_OPTIMIZATION_LEVEL: -O
+
+# Every dependency is a local package or pinned by exact revision. No analytics, crash
+# reporting or ad SDKs — `make audit` fails the build if one appears.
+packages:
+  HerdrKit:
+    path: Packages/HerdrKit
+
+targets:
+  CowboyHero:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/CowboyHero
+    dependencies:
+      - package: HerdrKit
+    info:
+      path: App/CowboyHero/Info.plist
+      properties:
+        CFBundleDisplayName: Cowboy Hero
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+  CowboyHeroTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: App/CowboyHeroTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: CowboyHero
+
+schemes:
+  CowboyHero:
+    build:
+      targets:
+        CowboyHero: all
+    test:
+      targets:
+        - CowboyHeroTests

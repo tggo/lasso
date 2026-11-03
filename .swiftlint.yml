@@ -1,0 +1,3 @@
+included: [App, Packages]
+excluded: [Packages/*/.build]
+disabled_rules: [identifier_name, trailing_comma]

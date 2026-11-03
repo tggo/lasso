@@ -1,0 +1,11 @@
+.DS_Store
+*.xcodeproj/
+build/
+DerivedData/
+.build/
+.swiftpm/
+.env
+*.xcuserstate
+xcuserdata/
+native/build/
+native/out/
