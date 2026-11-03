@@ -115,7 +115,7 @@ device: generate
 	xcodebuild -project $(PROJECT).xcodeproj -scheme $(SCHEME) -configuration Release \
 		-destination 'generic/platform=iOS' -allowProvisioningUpdates $(ASC_AUTH) $(TEAM_FLAG) \
 		-derivedDataPath build/device build
-	@ecid=$$(xcrun devicectl list devices 2>/dev/null | awk '/connected/ {print $$3; exit}'); \
+	@ecid=$$(xcrun devicectl list devices 2>/dev/null | awk '/iPhone/ && /(available|connected)/ {print $$3; exit}'); \
 	[ -n "$$ecid" ] || { echo "❌ No iPhone connected/unlocked."; exit 1; }; \
 	xcrun devicectl device install app --device "$$ecid" build/device/Build/Products/Release-iphoneos/$(PROJECT).app
 

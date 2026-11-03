@@ -9,6 +9,7 @@ struct SessionView: View {
     @State private var selected: String?
     @State private var prompt: NamePrompt?
     @State private var actionError: String?
+    @State private var confirm: CloseConfirm?
 
     var body: some View {
         let store = model.store(for: host)
@@ -16,7 +17,18 @@ struct SessionView: View {
             if case let .failed(msg) = store.phase {
                 Section { ConnectionError(message: msg) { store.reconnectNow() } }
             }
-            ForEach(store.snapshot.workspaces.sorted { $0.number < $1.number }) { ws in
+            let blocked = store.agentsByAttention.filter { $0.agentStatus == .blocked }
+            if !blocked.isEmpty {
+                Section {
+                    ForEach(blocked) { agent in
+                        NavigationLink(value: agent.paneId) { AgentRow(agent: agent) }
+                    }
+                } header: {
+                    Label("Needs you", systemImage: "hand.raised.fill").foregroundStyle(AgentStatus.blocked.textColor)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
+            ForEach(sortedWorkspaces(store)) { ws in
                 Section {
                     ForEach(store.agents(in: ws.workspaceId)) { agent in
                         NavigationLink(value: agent.paneId) { AgentRow(agent: agent) }
@@ -27,32 +39,49 @@ struct SessionView: View {
                     let shells = store.snapshot.panes.filter { p in p.workspaceId == ws.workspaceId && store.agent(p.paneId) == nil }
                     ForEach(shells) { pane in
                         NavigationLink(value: pane.paneId) {
-                            Label(pane.label ?? pane.title ?? pane.paneId, systemImage: "terminal").foregroundStyle(.secondary)
-                        }
-                        .contextMenu {
-                            Menu("Start agent") {
-                                ForEach(["claude", "codex", "pi", "opencode"], id: \.self) { kind in
-                                    Button(kind) { run { try await store.client.startAgent(kind: kind, name: kind, pane: pane.paneId) } }
+                            Label {
+                                VStack(alignment: .leading) {
+                                    Text(pane.label ?? "Shell")
+                                    Text(pane.cwd.map { ($0 as NSString).abbreviatingWithTildeInPath } ?? pane.paneId)
+                                        .font(.caption).foregroundStyle(.secondary)
                                 }
-                            }
+                            } icon: { Image(systemName: "terminal") }
                         }
+                        .contextMenu { startAgentMenu(store, pane: pane.paneId) }
+                        .swipeActions { Menu { startAgentMenu(store, pane: pane.paneId) } label: { Label("Start agent", systemImage: "play") } }
                     }
                 } header: {
-                    WorkspaceHeader(ws: ws, tabs: store.tabs(in: ws.workspaceId))
-                        .contextMenu {
-                            Button("New tab") { run { try await store.client.createTab(workspace: ws.workspaceId, label: nil) } }
-                            Button("Rename workspace") { prompt = .renameWorkspace(ws.workspaceId, ws.label) }
+                    HStack {
+                        WorkspaceHeader(ws: ws, tabs: store.tabs(in: ws.workspaceId))
+                        Menu {
+                            Button("New tab", systemImage: "plus.square") {
+                                run { try await store.client.createTab(workspace: ws.workspaceId, label: nil) }
+                            }
+                            Button("Rename workspace", systemImage: "pencil") { prompt = .renameWorkspace(ws.workspaceId, ws.label) }
                             Menu("Tabs") {
                                 ForEach(store.tabs(in: ws.workspaceId)) { tab in
                                     Button("Rename \(tab.label)") { prompt = .renameTab(tab.tabId, tab.label) }
-                                    Button("Close \(tab.label)", role: .destructive) { run { try await store.client.closeTab(tab.tabId) } }
+                                    Button("Close \(tab.label)", role: .destructive) { confirm = .tab(tab.tabId, tab.label) }
                                 }
                             }
-                            Button("Close workspace", role: .destructive) { run { try await store.client.closeWorkspace(ws.workspaceId) } }
+                            Button("Close workspace", systemImage: "xmark", role: .destructive) { confirm = .workspace(ws.workspaceId, ws.label) }
+                        } label: {
+                            Image(systemName: "ellipsis.circle").frame(minWidth: 44, minHeight: 32)
                         }
+                        .accessibilityLabel("Workspace actions for \(ws.label)")
+                    }
                 }
             }
         }
+        .confirmationDialog(confirm?.title ?? "", isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }),
+                            titleVisibility: .visible, presenting: confirm) { c in
+            Button("Close", role: .destructive) {
+                switch c {
+                case let .workspace(id, _): run { try await store.client.closeWorkspace(id) }
+                case let .tab(id, _): run { try await store.client.closeTab(id) }
+                }
+            }
+        } message: { _ in Text("Processes running in it are terminated on the host.") }
         .overlay {
             if store.phase == .connecting, store.snapshot.version.isEmpty { ProgressView("Connecting…") }
             else if store.phase == .live, store.snapshot.workspaces.isEmpty {
@@ -61,6 +90,7 @@ struct SessionView: View {
         }
         .refreshable { await store.refresh() }
         .navigationTitle(host.name)
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: String.self) { pane in AgentDetailView(host: host, paneID: pane) }
         .navigationDestination(item: $selected) { pane in AgentDetailView(host: host, paneID: pane) }
         .toolbar {
@@ -79,7 +109,7 @@ struct SessionView: View {
                 }
             }
         }
-        .alert("herdr", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
+        .alert("Action failed", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
             Button("OK") {}
         } message: { Text(actionError ?? "") }
         .onAppear {
@@ -87,6 +117,16 @@ struct SessionView: View {
             consumePending()
         }
         .onChange(of: model.pendingAgent?.pane) { _, _ in consumePending() }
+    }
+
+    private func sortedWorkspaces(_ store: SessionStore) -> [Workspace] {
+        store.snapshot.workspaces.sorted { ($0.agentStatus, $0.number) < ($1.agentStatus, $1.number) }
+    }
+
+    @ViewBuilder private func startAgentMenu(_ store: SessionStore, pane: String) -> some View {
+        ForEach(["claude", "codex", "pi", "opencode"], id: \.self) { kind in
+            Button("Start \(kind)") { run { try await store.client.startAgent(kind: kind, name: kind, pane: pane) } }
+        }
     }
 
     private func consumePending() {
@@ -100,9 +140,26 @@ struct SessionView: View {
             do {
                 _ = try await op()
                 await model.store(for: host).refresh()
-            } catch { actionError = String(describing: error) }
+            } catch { actionError = friendly(error) }
         }
     }
+}
+
+enum CloseConfirm {
+    case workspace(String, String), tab(String, String)
+    var title: String {
+        switch self {
+        case let .workspace(_, l): "Close workspace “\(l)”?"
+        case let .tab(_, l): "Close tab “\(l)”?"
+        }
+    }
+}
+
+/// Human-readable error text instead of a Swift dump.
+func friendly(_ error: Error) -> String {
+    if let e = error as? LocalizedError, let d = e.errorDescription { return d }
+    // Lasso's own errors implement CustomStringConvertible with readable text.
+    return String(describing: error)
 }
 
 enum NamePrompt: Identifiable {
@@ -144,8 +201,11 @@ struct WorkspaceHeader: View {
             StatusDot(status: ws.agentStatus)
             Text(ws.label)
             Spacer()
-            Text("\(tabs.count) tab\(tabs.count == 1 ? "" : "s")").font(.caption2)
+            Text("\(tabs.count) tab\(tabs.count == 1 ? "" : "s")").font(.caption)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(ws.label), \(ws.agentStatus.rawValue), \(tabs.count) tabs")
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -159,7 +219,7 @@ struct AgentRow: View {
                 Text(agent.cwd.map { ($0 as NSString).lastPathComponent } ?? agent.paneId).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(agent.agentStatus.rawValue).font(.caption).foregroundStyle(agent.agentStatus.color)
+            Text(agent.agentStatus.rawValue).font(.caption.weight(.semibold)).foregroundStyle(agent.agentStatus.textColor)
         }
         .accessibilityElement(children: .combine)
     }
@@ -216,6 +276,16 @@ struct ConnectionError: View {
 }
 
 extension AgentStatus {
+    /// Text-safe variant (≥4.5:1 on system backgrounds in both modes).
+    var textColor: Color {
+        switch self {
+        case .blocked: Color(light: .init(red: 0.70, green: 0.30, blue: 0), dark: .orange)
+        case .working: Color(light: .init(red: 0, green: 0.38, blue: 0.80), dark: .init(red: 0.4, green: 0.7, blue: 1))
+        case .done: Color(light: .init(red: 0.10, green: 0.48, blue: 0.20), dark: .green)
+        case .idle, .unknown: .secondary
+        }
+    }
+
     var color: Color {
         switch self {
         case .blocked: .orange
@@ -224,5 +294,11 @@ extension AgentStatus {
         case .idle: .gray
         case .unknown: .secondary
         }
+    }
+}
+
+extension Color {
+    init(light: Color, dark: Color) {
+        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light) })
     }
 }

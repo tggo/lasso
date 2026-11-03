@@ -1,0 +1,32 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: brew install xcodegen swiftlint swiftformat cmake || true
+      - name: Cache native libs
+        id: native
+        uses: actions/cache@v4
+        with:
+          path: Packages/LassoSSH/Artifacts
+          key: native-${{ hashFiles('native/Sources.lock', 'native/build.sh', 'native/support/*') }}
+      - name: Build OpenSSL + libssh2 from pinned source
+        if: steps.native.outputs.cache-hit != 'true'
+        run: make native
+      - name: No-backdoor audit
+        run: make audit
+      - name: Lint
+        run: make lint
+      - name: Package tests
+        run: make test-packages
+      - name: Integration (local sshd + herdr)
+        run: brew install herdr && make test-integration
+      - name: App build
+        run: make build DEST='generic/platform=iOS Simulator'

@@ -45,7 +45,7 @@ struct HostEditor: View {
                         LabeledContent("Key type", value: key.type)
                         Text(key.fingerprint).font(.caption.monospaced()).textSelection(.enabled)
                         Text(
-                            "Compare with `ssh-keygen -lf /etc/ssh/ssh_host_\(key.type.replacingOccurrences(of: "ssh-", with: ""))_key.pub` on the host."
+                            "Compare with `ssh-keygen -lf /etc/ssh/ssh_host_\(hostKeyFile(key.type))_key.pub` on the host."
                         )
                         .font(.caption).foregroundStyle(.secondary)
                     } else {
@@ -69,7 +69,16 @@ struct HostEditor: View {
                 }
             }
             .onAppear { port = String(host.target.port) }
+            // A probed key belongs to the exact target probed; editing it invalidates the probe.
+            .onChange(of: host.target.host) { _, _ in resetProbe() }
+            .onChange(of: host.target.user) { _, _ in resetProbe() }
+            .onChange(of: port) { _, _ in resetProbe() }
         }
+    }
+
+    private func resetProbe() {
+        probed = nil
+        error = nil
     }
 
     private var isValid: Bool { !host.target.host.isEmpty && !host.target.user.isEmpty && Int(port) != nil }
@@ -79,7 +88,7 @@ struct HostEditor: View {
         probing = true
         error = nil
         defer { probing = false }
-        do { probed = try await model.probe(host) } catch { self.error = String(describing: error) }
+        do { probed = try await model.probe(host) } catch { self.error = friendly(error) }
     }
 
     private func save() {
@@ -95,4 +104,10 @@ extension Binding where Value == String {
     init(_ source: Binding<String?>, default d: String) {
         self.init(get: { source.wrappedValue ?? d }, set: { source.wrappedValue = $0.isEmpty ? nil : $0 })
     }
+}
+
+func hostKeyFile(_ type: String) -> String {
+    if type.contains("ed25519") { return "ed25519" }
+    if type.hasPrefix("ecdsa") { return "ecdsa" }
+    return "rsa"
 }

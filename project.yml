@@ -19,6 +19,8 @@ settings:
     IPHONEOS_DEPLOYMENT_TARGET: "18.0"
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: true
+    # Native libs are arm64-only (Apple silicon simulators + devices).
+    "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
 
 configs:
   Debug:

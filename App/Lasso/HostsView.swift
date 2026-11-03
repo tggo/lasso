@@ -8,15 +8,16 @@ struct HostsView: View {
     @State private var editing: HerdrHost?
     @State private var showKey = false
     @State private var path = NavigationPath()
+    @State private var deleting: HerdrHost?
 
     var body: some View {
         NavigationStack(path: $path) {
             List {
                 ForEach(model.hosts) { host in
                     NavigationLink(value: host.id) { HostRow(host: host) }
-                        .swipeActions {
-                            Button(role: .destructive) { model.delete(host.id) } label: { Label("Delete", systemImage: "trash") }
-                            Button { editing = host } label: { Label("Edit", systemImage: "pencil") }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) { deleting = host } label: { Label("Delete", systemImage: "trash") }
+                            Button { editing = host } label: { Label("Edit", systemImage: "pencil") }.tint(.blue)
                         }
                 }
             }
@@ -27,6 +28,7 @@ struct HostsView: View {
                     } description: {
                         Text("Add a machine running herdr. Lasso connects over SSH with a key that never leaves this phone.")
                     } actions: {
+                        Button("Show device key") { showKey = true }.buttonStyle(.bordered)
                         Button("Add host") { editing = newHost() }.buttonStyle(.borderedProminent)
                     }
                 }
@@ -45,12 +47,17 @@ struct HostsView: View {
             }
             .sheet(item: $editing) { HostEditor(host: $0) }
             .sheet(isPresented: $showKey) { DeviceKeyView() }
-            .onChange(of: model.pendingAgent?.pane) { _, _ in
-                if let p = model.pendingAgent, model.hosts.contains(where: { $0.id == p.host }) {
-                    path = NavigationPath([p.host])
-                }
-            }
+            .onChange(of: model.pendingAgent?.pane) { _, _ in openPending() }
+            .onAppear { openPending() }
+            .confirmationDialog("Delete \(deleting?.name ?? "host")?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                                titleVisibility: .visible) {
+                Button("Delete", role: .destructive) { if let d = deleting { model.delete(d.id) } }
+            } message: { Text("Removes the host and its pinned host key from this phone. Nothing changes on the host.") }
         }
+    }
+
+    private func openPending() {
+        if let p = model.pendingAgent, model.hosts.contains(where: { $0.id == p.host }) { path = NavigationPath([p.host]) }
     }
 
     private func newHost() -> HerdrHost { HerdrHost(name: "", target: SSHTarget(host: "", port: 22, user: "")) }
@@ -72,7 +79,7 @@ struct HostRow: View {
             if let store, store.blockedCount > 0 {
                 Text("\(store.blockedCount)")
                     .font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(.orange, in: Capsule()).foregroundStyle(.white)
+                    .background(AgentStatus.blocked.textColor, in: Capsule()).foregroundStyle(.white)
                     .accessibilityLabel("\(store.blockedCount) blocked")
             }
         }
@@ -82,6 +89,10 @@ struct HostRow: View {
 struct DeviceKeyView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+
+    private var installCommand: String {
+        "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '\(model.publicKeyLine)' >> ~/.ssh/authorized_keys"
+    }
 
     var body: some View {
         NavigationStack {
@@ -97,8 +108,8 @@ struct DeviceKeyView: View {
                 }
                 Section("Fingerprint") { Text(model.publicKeyFingerprint).font(.caption.monospaced()).textSelection(.enabled) }
                 Section {
-                    Text(verbatim: "echo '\(model.publicKeyLine)' >> ~/.ssh/authorized_keys")
-                        .font(.caption2.monospaced()).textSelection(.enabled)
+                    Text(verbatim: installCommand).font(.caption2.monospaced()).textSelection(.enabled)
+                    Button("Copy command") { UIPasteboard.general.string = installCommand }
                 } header: { Text("One-liner for the host") }
             }
             .navigationTitle("Device key")

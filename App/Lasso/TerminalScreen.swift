@@ -9,6 +9,7 @@ struct TerminalScreen: View {
     @Environment(\.dismiss) private var dismiss
     let host: HerdrHost
     let paneID: String
+    var title: String = "Terminal"
     @StateObject private var terminal = TerminalViewState()
     @State private var bridge = TerminalBridge()
     @State private var takeover = true
@@ -17,7 +18,9 @@ struct TerminalScreen: View {
         NavigationStack {
             TerminalSurfaceView(context: terminal)
                 .ignoresSafeArea(.container, edges: .bottom)
+                .accessibilityLabel("Terminal")
                 .overlay {
+                    if bridge.connecting { ProgressView("Attaching…") }
                     if let e = bridge.error {
                         ContentUnavailableView {
                             Label("Terminal closed", systemImage: "xmark.octagon")
@@ -27,15 +30,19 @@ struct TerminalScreen: View {
                         .background(.background)
                     }
                 }
-                .navigationTitle(paneID)
+                .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Close") { bridge.close(); dismiss() } }
                     ToolbarItem(placement: .primaryAction) {
-                        Toggle(isOn: $takeover) { Text("Takeover") }
-                            .toggleStyle(.button)
+                        Menu {
+                            Toggle(isOn: $takeover) {
+                                Label("Fit pane to phone", systemImage: "iphone")
+                                Text("Takeover: the pane resizes to this screen. Off: mirror the desktop size.")
+                            }
+                        } label: { Image(systemName: takeover ? "iphone" : "desktopcomputer") }
+                            .accessibilityLabel(takeover ? "Fit to phone, on" : "Fit to phone, off")
                             .onChange(of: takeover) { _, _ in Task { await connect() } }
-                            .accessibilityHint("Resize the pane to this screen instead of mirroring the desktop size")
                     }
                 }
         }
@@ -59,6 +66,7 @@ struct TerminalScreen: View {
 @MainActor @Observable
 final class TerminalBridge {
     private(set) var error: String?
+    private(set) var connecting = false
     @ObservationIgnored private var pty: PTYChannel?
     @ObservationIgnored private let state = BridgeState()
     @ObservationIgnored lazy var session = InMemoryTerminalSession(
@@ -71,6 +79,8 @@ final class TerminalBridge {
 
     func open(link: HostLink, pane: String, takeover: Bool) async {
         error = nil
+        connecting = true
+        defer { connecting = false }
         let (cols, rows) = state.size ?? (80, 24)
         do {
             let p = try await link.attach(pane: pane, takeover: takeover, cols: cols, rows: rows)
@@ -85,7 +95,7 @@ final class TerminalBridge {
             })
             if let s = state.size { p.resize(cols: s.0, rows: s.1) }
         } catch {
-            self.error = String(describing: error)
+            self.error = friendly(error)
         }
     }
 
