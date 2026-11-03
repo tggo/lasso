@@ -1,3 +1,4 @@
+.PHONY: native native-verify native-check test-ssh test-integration it-stop
 .PHONY: help bootstrap install-tools generate build build-release test test-packages test-herdrkit \
 	lint format audit open clean status device archive export testflight bump-build
 
@@ -22,6 +23,8 @@ help:
 	@echo "  make generate       generate Xcode project (XcodeGen)"
 	@echo "  make build          debug build for the simulator"
 	@echo "  make test           app unit tests (simulator)"
+	@echo "  make native         build OpenSSL + libssh2 from pinned source (once, ~2 min)"
+	@echo "  make test-integration  SSH + herdr end-to-end on a local unprivileged sshd"
 	@echo "  make test-packages  local Swift package tests (macOS, no simulator)"
 	@echo "  make lint / format  SwiftLint / SwiftFormat"
 	@echo "  make audit          fail on tracking SDKs, unknown hosts, unpinned deps"
@@ -31,12 +34,12 @@ help:
 
 install-tools:
 	@command -v brew >/dev/null || { echo "❌ Homebrew required: https://brew.sh"; exit 1; }
-	@for t in xcodegen swiftlint swiftformat; do brew list $$t >/dev/null 2>&1 || brew install $$t; done
+	@for t in xcodegen swiftlint swiftformat cmake; do brew list $$t >/dev/null 2>&1 || brew install $$t; done
 	@echo "✅ tools installed"
 
-bootstrap: install-tools generate
+bootstrap: install-tools native generate
 
-generate:
+generate: native-check
 	xcodegen generate --quiet
 
 build: generate
@@ -53,7 +56,31 @@ test: generate
 test-herdrkit:
 	swift test --package-path Packages/HerdrKit
 
-test-packages: test-herdrkit
+NATIVE_OK := $(wildcard Packages/LassoSSH/Artifacts/CLibSSH2.xcframework)
+
+# OpenSSL + libssh2 from SHA-256 pinned source (native/Sources.lock). Output is gitignored.
+native:
+	./native/build.sh
+
+native-verify:
+	./native/build.sh --verify-only
+
+native-check:
+	@[ -n "$(NATIVE_OK)" ] || { echo "❌ native libs missing — run: make native"; exit 1; }
+
+test-ssh: native-check
+	swift test --package-path Packages/LassoSSH
+
+# Real SSH + real herdr: unprivileged sshd on 127.0.0.1:2222 and a throwaway herdr session.
+test-integration: native-check
+	@./scripts/it-sshd.sh start
+	@env $$(./scripts/it-sshd.sh env) swift test --package-path Packages/LassoSSH
+	@env $$(./scripts/it-sshd.sh env) swift test --package-path Packages/HerdrKit
+
+it-stop:
+	@./scripts/it-sshd.sh stop
+
+test-packages: test-herdrkit test-ssh
 
 lint:
 	swiftlint --quiet

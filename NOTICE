@@ -1,0 +1,13 @@
+Lasso
+Copyright (c) 2026 Ruslan — MIT License (see LICENSE)
+
+This project adapts ideas and build-script structure from:
+- Heeler (https://github.com/ZingerLittleBee/Heeler), Apache-2.0 —
+  native/build.sh follows the approach of Packages/HeelerSSH/scripts/build-native.sh;
+  the streamlocal-per-request transport follows Heeler ADR 0011.
+- herdr (https://github.com/ogulcancelik/herdr), Apache-2.0 — the API schema copy in
+  docs/reference/herdr-api.schema.json.
+
+Linked at build time (built from source; licences copied to Packages/LassoSSH/Artifacts/Notices):
+- OpenSSL — Apache-2.0
+- libssh2 — BSD-3-Clause

@@ -32,6 +32,8 @@ configs:
 packages:
   HerdrKit:
     path: Packages/HerdrKit
+  LassoSSH:
+    path: Packages/LassoSSH
 
 targets:
   Lasso:
@@ -41,6 +43,7 @@ targets:
       - path: App/Lasso
     dependencies:
       - package: HerdrKit
+      - package: LassoSSH
     info:
       path: App/Lasso/Info.plist
       properties:

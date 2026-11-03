@@ -1,0 +1,8 @@
+# Pinned upstream sources for `make native`. Hashes checked before anything is built.
+# OpenSSL hash cross-checked against upstream .sha256 file (2026-11-03).
+OPENSSL_VERSION="3.6.3"
+OPENSSL_URL="https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz"
+OPENSSL_SHA256="243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+LIBSSH2_VERSION="1.11.1"
+LIBSSH2_URL="https://github.com/libssh2/libssh2/releases/download/libssh2-1.11.1/libssh2-1.11.1.tar.gz"
+LIBSSH2_SHA256="d9ec76cbe34db98eec3539fe2c899d26b0c837cb3eb466a56b0f109cabf658f7"

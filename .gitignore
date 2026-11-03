@@ -8,4 +8,4 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 native/build/
-native/out/
+Packages/LassoSSH/Artifacts/

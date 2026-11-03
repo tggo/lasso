@@ -33,3 +33,20 @@ the answer — a guessed criterion is worse than none.
 - a request encodes to exactly one line `{"id","method","params"}\n`
 - `result`, `error` (incl. empty id) and `event` lines decode; unknown fields don't fail decoding
 **Verified:** `make test-herdrkit` — 2026-11-03.
+
+## Build — native crypto from pinned source
+**What:** `make native` builds OpenSSL + libssh2 xcframeworks (iOS, Simulator, macOS) from SHA-256 pinned tarballs.
+**DoD:**
+- a hash mismatch aborts before compiling; `make native-verify` checks hashes only
+- output lands in `Packages/LassoSSH/Artifacts/` (gitignored) with licences and PROVENANCE.txt
+- `make generate`/`build` refuse to run without it and say `make native`
+**Verified:** clean `make native` in 80 s, app builds against it — 2026-11-03.
+
+## SSH — connect, auth, host-key pinning, channels (LassoSSH)
+**What:** SSH session with an on-device Ed25519 key, host-key trust callback, exec, Unix-socket (streamlocal) requests, line streams and PTY.
+**DoD:**
+- untrusted host key aborts the connection with `hostKeyRejected`; unknown client key fails with `auth`
+- fingerprint equals `ssh-keygen -l` output
+- `ping` to herdr over streamlocal returns `pong`; 25 sequential requests on one connection succeed
+- PTY echoes input and accepts resize
+**Verified:** `make test-integration` (8 tests, real sshd + herdr 0.9.5) — 2026-11-03.
