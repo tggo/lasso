@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import HerdrKit
+import Testing
 
 /// Transport that replies from a closure — lets tests assert on the exact request line.
 struct FakeTransport: HerdrTransport {
@@ -9,7 +9,8 @@ struct FakeTransport: HerdrTransport {
         let req = try JSONDecoder().decode(JSONValue.self, from: line)
         return Data(reply(req).utf8)
     }
-    func stream(_ line: Data) -> AsyncThrowingStream<Data, Error> {
+
+    func stream(_: Data) -> AsyncThrowingStream<Data, Error> {
         AsyncThrowingStream { c in
             c.yield(Data(#"{"id":"lasso_events","result":{"type":"subscription_started"}}"#.utf8))
             c.yield(Data(#"{"event":"pane_agent_status_changed","data":{"pane_id":"w1:p1","agent_status":"blocked","new_field":1}}"#.utf8))
@@ -55,7 +56,9 @@ let snapshotJSON = #"""
 @Test func eventsStreamSkipsAckAndDecodes() async throws {
     let c = HerdrClient(transport: FakeTransport { _ in "" })
     var got: [HerdrEvent] = []
-    for try await e in c.events(statusOf: ["w1:p1"]) { got.append(e) }
+    for try await e in c.events(statusOf: ["w1:p1"]) {
+        got.append(e)
+    }
     #expect(got.count == 1)
     #expect(got[0].paneId == "w1:p1")
     #expect(got[0].status == .blocked)

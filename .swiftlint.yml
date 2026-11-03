@@ -1,3 +1,4 @@
 included: [App, Packages]
-excluded: [Packages/*/.build]
-disabled_rules: [identifier_name, trailing_comma]
+excluded: [Packages/*/.build, Packages/LassoSSH/Artifacts]
+disabled_rules: [identifier_name, trailing_comma, optional_data_string_conversion, type_name, statement_position, opening_brace]
+line_length: 200

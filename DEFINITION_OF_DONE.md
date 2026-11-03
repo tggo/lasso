@@ -60,3 +60,42 @@ the answer — a guessed criterion is worse than none.
 - event stream loss → backoff reconnect (1 s doubling to 30 s) and fresh snapshot
 - `attach(pane:)` streams the pane terminal through `herdr agent attach` with PATH fixed for non-login sshd
 **Verified:** `make test-integration` (LassoCore 6 tests incl. report_agent → blocked, attach echo) — 2026-11-03.
+
+## App — hosts and device key
+**What:** add/edit/delete hosts; one on-device Ed25519 key shown for authorized_keys.
+**DoD:**
+- a new host can be saved only after "Connect & show host key" succeeds and the user taps "Trust & save" (fingerprint shown)
+- the key screen shows the `ssh-ed25519 …` line, a copy button and the fingerprint
+- "Forget pinned key" clears the pin; the next connect shows the new fingerprint
+**Verified:** —
+
+## App — live session list
+**What:** per host, workspaces with their agents (blocked first) and plain shell panes; green/yellow/red connection dot.
+**DoD:**
+- blocked agent appears with orange "blocked" label; list follows herdr without manual refresh
+- context menus: new tab, rename/close workspace and tab, rename agent, start agent (claude/codex/pi/opencode) on a shell pane
+- connection loss shows "Not connected" + Retry; the app reconnects on foreground
+**Verified:** `make test-ui` against local herdr (blocked + working agents listed) — 2026-11-03.
+
+## App — agent detail
+**What:** recent pane output, composer and key bar (esc, enter, tab, shift+tab, arrows, ^C, 1/2/3, y/n).
+**DoD:**
+- output refreshes every 1 s while the agent works, 2.5 s otherwise
+- a typed prompt reaches the pane; blocked agents get it as text + enter (agent.prompt refuses blocked agents)
+**Verified:** `make test-ui`: "echo from-phone" sent from the phone executed in the pane — 2026-11-03.
+
+## App — live terminal
+**What:** full-screen libghostty terminal attached via `herdr agent attach <pane> [--takeover]`.
+**DoD:**
+- typing in the terminal goes to the pane; resize follows the view
+- herdr's startup DA1/DA2/DECRQM probes are dropped so no `1016;2$y…` garbage lands in the pane
+- shell noise before the start marker is not shown; dark theme
+**Verified:** `make test-ui` screenshot build/shots/3-terminal.png clean prompt after attach — 2026-11-03.
+
+## App — notifications
+**What:** local notification when an agent becomes blocked, or done after working, while the app is not active.
+**DoD:**
+- from the live store while the app runs in background; from a BGAppRefresh snapshot pass otherwise (iOS decides timing)
+- tapping opens that agent
+- no push server, no relay
+**Verified:** —

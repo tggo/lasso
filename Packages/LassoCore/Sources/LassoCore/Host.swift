@@ -14,7 +14,8 @@ public struct HerdrHost: Sendable, Codable, Identifiable, Hashable {
     public var pinnedHostKey: HostKey?
 
     public init(id: UUID = UUID(), name: String, target: SSHTarget, session: String? = nil,
-                socketPath: String? = nil, pinnedHostKey: HostKey? = nil) {
+                socketPath: String? = nil, pinnedHostKey: HostKey? = nil)
+    {
         self.id = id
         self.name = name
         self.target = target

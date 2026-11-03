@@ -66,7 +66,7 @@ public final class SessionStore {
 
     /// Force a snapshot now (pull-to-refresh, after a user action).
     public func refresh() async {
-        do { apply(try await client.snapshot()) } catch { phase = .failed(String(describing: error)) }
+        do { try await apply(client.snapshot()) } catch { phase = .failed(String(describing: error)) }
     }
 
     private func run() async {
@@ -111,7 +111,7 @@ public final class SessionStore {
         refreshTask = Task { [weak self] in
             if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
             guard !Task.isCancelled, let self else { return }
-            if let s = try? await self.client.snapshot() { self.apply(s) }
+            if let s = try? await client.snapshot() { apply(s) }
         }
     }
 

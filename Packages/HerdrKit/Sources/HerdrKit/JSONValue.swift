@@ -12,7 +12,7 @@ public enum JSONValue: Codable, Sendable, Equatable {
         else if let n = try? c.decode(Double.self) { self = .number(n) }
         else if let s = try? c.decode(String.self) { self = .string(s) }
         else if let a = try? c.decode([JSONValue].self) { self = .array(a) }
-        else { self = .object(try c.decode([String: JSONValue].self)) }
+        else { self = try .object(c.decode([String: JSONValue].self)) }
     }
 
     public func encode(to encoder: Encoder) throws {

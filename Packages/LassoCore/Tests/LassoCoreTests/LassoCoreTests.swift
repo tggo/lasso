@@ -1,8 +1,8 @@
 import Foundation
 import HerdrKit
+@testable import LassoCore
 import LassoSSH
 import Testing
-@testable import LassoCore
 
 @Test func socketPathResolution() {
     let t = SSHTarget(host: "h", user: "u")
@@ -28,30 +28,31 @@ enum IT {
     static var enabled: Bool { env["LASSO_IT_HOST"] != nil }
     static func host(pinned: HostKey? = nil) -> HerdrHost {
         HerdrHost(name: "it", target: SSHTarget(host: env["LASSO_IT_HOST"]!, port: Int(env["LASSO_IT_PORT"]!)!, user: env["LASSO_IT_USER"]!),
-             socketPath: env["LASSO_IT_SOCK"]!, pinnedHostKey: pinned)
+                  socketPath: env["LASSO_IT_SOCK"]!, pinnedHostKey: pinned)
     }
+
     static func keys() throws -> KeyStore {
-        MemoryKeyStore(key: try SSHKey(openSSHPEM: String(contentsOfFile: env["LASSO_IT_KEY"]!, encoding: .utf8)))
+        try MemoryKeyStore(key: SSHKey(openSSHPEM: String(contentsOfFile: env["LASSO_IT_KEY"]!, encoding: .utf8)))
     }
 }
 
 @Suite(.enabled(if: IT.enabled), .serialized) struct CoreIntegration {
     @Test func tofuPinsThenMismatchRefuses() async throws {
         let pinned = PinBox()
-        let link = HostLink(host: IT.host(), keys: try IT.keys(), onPin: { pinned.set($0) })
+        let link = try HostLink(host: IT.host(), keys: IT.keys(), onPin: { pinned.set($0) })
         _ = try await HerdrClient(transport: link).ping()
         let key = try #require(pinned.value)
 
         let bogus = HostKey(type: "ssh-ed25519", blob: Data(repeating: 7, count: 51))
-        let bad = HostLink(host: IT.host(pinned: bogus), keys: try IT.keys())
+        let bad = try HostLink(host: IT.host(pinned: bogus), keys: IT.keys())
         await #expect(throws: HostKeyMismatch.self) { _ = try await HerdrClient(transport: bad).ping() }
 
-        let good = HostLink(host: IT.host(pinned: key), keys: try IT.keys())
+        let good = try HostLink(host: IT.host(pinned: key), keys: IT.keys())
         #expect(try await HerdrClient(transport: good).ping().version.isEmpty == false)
     }
 
     @Test @MainActor func storeSeesWorkspaceAndAgentStatusLive() async throws {
-        let link = HostLink(host: IT.host(), keys: try IT.keys())
+        let link = try HostLink(host: IT.host(), keys: IT.keys())
         let store = SessionStore(hostID: UUID(), transport: link)
         var changes: [(String, AgentStatus)] = []
         store.onStatusChange = { a, _ in changes.append((a.paneId, a.agentStatus)) }
@@ -80,14 +81,14 @@ enum IT {
         #expect(changes.contains { $0 == (pane, .blocked) })
 
         try await store.client.sendText(pane: pane, "echo lasso-marker\n")
-        try await waitUntilAsync { (try? await store.client.read(pane, lines: 50).text.contains("lasso-marker")) == true }
+        try await waitUntilAsync { await (try? store.client.read(pane, lines: 50).text.contains("lasso-marker")) == true }
 
         try await store.client.closeWorkspace(ws)
         try await waitUntil { !store.snapshot.workspaces.contains { $0.workspaceId == ws } }
     }
 
     @Test func attachStreamsTerminal() async throws {
-        let link = HostLink(host: IT.host(), keys: try IT.keys())
+        let link = try HostLink(host: IT.host(), keys: IT.keys())
         let c = HerdrClient(transport: link)
         let created = try await c.createWorkspace(label: "it-attach")
         let pane = try #require(created["root_pane"]?["pane_id"]?.stringValue)
@@ -100,7 +101,9 @@ enum IT {
         pty.start(output: { out.append($0) }, exit: { _ in })
         try await Task.sleep(for: .milliseconds(800))
         pty.write(Data("echo attach-ok\r".utf8))
-        for _ in 0 ..< 60 where !out.text.contains("attach-ok") { try await Task.sleep(for: .milliseconds(100)) }
+        for _ in 0 ..< 60 where !out.text.contains("attach-ok") {
+            try await Task.sleep(for: .milliseconds(100))
+        }
         #expect(out.text.contains("attach-ok"))
         pty.close()
         try await c.closeWorkspace(ws)

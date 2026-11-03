@@ -1,4 +1,5 @@
 .PHONY: native native-verify native-check test-ssh test-integration it-stop test-core
+.PHONY: test-ui sim-demo
 .PHONY: help bootstrap install-tools generate build build-release test test-packages test-herdrkit \
 	lint format audit open clean status device archive export testflight bump-build
 
@@ -177,3 +178,13 @@ hooks:
 	chmod +x .githooks/commit-msg .claude/hooks/dod_reminder.sh 2>/dev/null || true; \
 	echo "✓ git-dod: commit-msg -> .githooks/commit-msg (hooksPath=$$hd)"
 # --- end git-dod -------------------------------------------------------------
+
+sim-demo: generate
+	./scripts/sim-demo.sh
+
+# Full UI flow on the simulator against local sshd + herdr. Screenshots -> build/shots/.
+test-ui: generate
+	@./scripts/sim-demo.sh >/dev/null
+	@mkdir -p build/shots
+	@env $$(./scripts/it-sshd.sh env | sed -E 's/(^| )LASSO_/\1TEST_RUNNER_LASSO_/g') TEST_RUNNER_LASSO_SHOTS=$(CURDIR)/build/shots \
+		xcodebuild test -project $(PROJECT).xcodeproj -scheme LassoUI -destination '$(DEST)' -quiet

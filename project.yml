@@ -36,6 +36,11 @@ packages:
     path: Packages/LassoSSH
   LassoCore:
     path: Packages/LassoCore
+  # Terminal renderer. Exact revision reviewed by Heeler (Ghostty 82938b633ba6); its libghostty
+  # binary is a checksummed prebuilt — the one accepted prebuilt, see docs/dependencies.md.
+  GhosttyTerminal:
+    url: https://github.com/Lakr233/libghostty-spm.git
+    revision: "7e45d27160f9b34aca9ca5c9820e9207482f9f04"
 
 targets:
   Lasso:
@@ -47,6 +52,8 @@ targets:
       - package: HerdrKit
       - package: LassoSSH
       - package: LassoCore
+      - package: GhosttyTerminal
+        product: GhosttyTerminal
     info:
       path: App/Lasso/Info.plist
       properties:
@@ -57,11 +64,25 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
+        NSLocalNetworkUsageDescription: Lasso connects over SSH to the herdr hosts you add on your local network.
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [dev.lasso.refresh]
   LassoTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: App/LassoTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Lasso
+
+  LassoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: App/LassoUITests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -76,3 +97,11 @@ schemes:
     test:
       targets:
         - LassoTests
+  LassoUI:
+    build:
+      targets:
+        Lasso: all
+        LassoUITests: [test]
+    test:
+      targets:
+        - LassoUITests

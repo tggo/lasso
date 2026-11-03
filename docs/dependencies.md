@@ -7,3 +7,4 @@
 | libghostty (Lakr233/libghostty-spm) | terminal emulator | exact revision + SwiftPM checksum | **yes** (tracked risk: build from Ghostty source later) |
 
 Adding a dependency: add a row here with the reason, pin it exactly, and run `make audit`.
+| GhosttyTerminal transitive: MSDisplayLink | display link for the terminal | resolved version locked in Package.resolved | no |

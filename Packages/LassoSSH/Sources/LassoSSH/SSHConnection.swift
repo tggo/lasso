@@ -20,7 +20,7 @@ public struct ExecResult: Sendable {
     public var output: String { String(decoding: stdout, as: UTF8.self) }
 }
 
-private let libssh2Ready: Bool = { libssh2_init(0) == 0 }()
+private let libssh2Ready: Bool = libssh2_init(0) == 0
 
 private let windowDefault: UInt32 = 2 * 1024 * 1024
 private let packetDefault: UInt32 = 32768
@@ -93,7 +93,8 @@ public final class SSHConnection: @unchecked Sendable {
             pem.withCString { p in
                 pub.withCString { k in
                     libssh2_userauth_publickey_frommemory(
-                        s, u, target.user.utf8.count, k, pub.utf8.count, p, pem.utf8.count, nil)
+                        s, u, target.user.utf8.count, k, pub.utf8.count, p, pem.utf8.count, nil
+                    )
                 }
             }
         }

@@ -30,10 +30,12 @@ public final class PTYChannel: @unchecked Sendable {
 
     public func close() { lock.withLock { stopped = true } }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func pump() {
         var chunk = [CChar](repeating: 0, count: 32768)
         var exitCode: Int32?
         loop: while true {
+            // swiftlint:disable:next large_tuple
             let (stop, toWrite, resize) = lock.withLock { () -> (Bool, Data, (Int, Int)?) in
                 defer { pendingResize = nil }
                 return (stopped, pendingWrite, pendingResize)

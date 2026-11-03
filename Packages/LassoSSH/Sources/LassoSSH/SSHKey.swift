@@ -38,7 +38,9 @@ public struct SSHKey: Sendable {
         priv.bytes(privateKey.rawRepresentation + publicBytes)
         priv.string(comment)
         var pad: UInt8 = 1
-        while priv.data.count % 8 != 0 { priv.data.append(pad); pad += 1 }
+        while priv.data.count % 8 != 0 {
+            priv.data.append(pad); pad += 1
+        }
 
         var out = SSHBuffer()
         out.data.append(contentsOf: Array("openssh-key-v1".utf8) + [0])
@@ -64,7 +66,7 @@ public struct SSHKey: Sendable {
         guard try r.raw(magic.count) == Data(magic) else { throw SSHError.badKey("magic") }
         guard try r.string() == "none", try r.string() == "none" else { throw SSHError.badKey("encrypted keys unsupported") }
         _ = try r.bytes(); _ = try r.uint32(); _ = try r.bytes()
-        var p = SSHReader(try r.bytes())
+        var p = try SSHReader(r.bytes())
         _ = try p.uint32(); _ = try p.uint32()
         guard try p.string() == "ssh-ed25519" else { throw SSHError.badKey("not ed25519") }
         _ = try p.bytes()
@@ -88,7 +90,8 @@ struct SSHReader {
         guard pos + n <= data.count else { throw SSHError.badKey("truncated") }
         defer { pos += n }; return data.subdata(in: pos ..< pos + n)
     }
+
     mutating func uint32() throws -> UInt32 { try raw(4).reduce(0) { $0 << 8 | UInt32($1) } }
     mutating func bytes() throws -> Data { try raw(Int(uint32())) }
-    mutating func string() throws -> String { String(decoding: try bytes(), as: UTF8.self) }
+    mutating func string() throws -> String { try String(decoding: bytes(), as: UTF8.self) }
 }

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import HerdrKit
+import Testing
 
 @Test func requestIsOneNDJSONLine() throws {
     let line = try HerdrRequest(id: "req_1", method: "ping").line()

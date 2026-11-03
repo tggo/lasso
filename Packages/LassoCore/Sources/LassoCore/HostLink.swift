@@ -26,7 +26,8 @@ public actor HostLink: HerdrTransport {
 
     public init(host: HerdrHost, keys: KeyStore,
                 firstUse: @escaping @Sendable (HostKey) -> Bool = { _ in true },
-                onPin: @escaping @Sendable (HostKey) -> Void = { _ in }) {
+                onPin: @escaping @Sendable (HostKey) -> Void = { _ in })
+    {
         self.host = host
         self.keys = keys
         self.firstUse = firstUse
@@ -50,7 +51,7 @@ public actor HostLink: HerdrTransport {
                 onPin(c.hostKey)
             }
             return c
-        } catch SSHError.hostKeyRejected(let fp) where pinned != nil {
+        } catch let SSHError.hostKeyRejected(fp) where pinned != nil {
             throw HostKeyMismatch(expected: pinned!.fingerprint, presented: seen.value?.fingerprint ?? fp)
         }
     }
@@ -73,7 +74,7 @@ public actor HostLink: HerdrTransport {
 
     public func socketPath() async throws -> String {
         if let resolvedSocket { return resolvedSocket }
-        let p = host.socketPath(home: try await home())
+        let p = try await host.socketPath(home: home())
         resolvedSocket = p
         return p
     }
@@ -97,7 +98,9 @@ public actor HostLink: HerdrTransport {
                     let path = try await self.socketPath()
                     let c = try await self.openConnection()
                     defer { c.close() }
-                    for try await l in c.unixLines(path: path, line: line) { cont.yield(l) }
+                    for try await l in c.unixLines(path: path, line: line) {
+                        cont.yield(l)
+                    }
                     cont.finish()
                 } catch { cont.finish(throwing: error) }
             }
@@ -117,7 +120,7 @@ public actor HostLink: HerdrTransport {
         let c = try await openConnection()
         var cmd = Self.pathPrefix
         if let s = host.session, !s.isEmpty, host.socketPath == nil { cmd += "export HERDR_SESSION=\(shellQuote(s)); " }
-        if let p = host.socketPath, !p.isEmpty { cmd += "export HERDR_SOCKET_PATH=\(shellQuote(try await socketPath())); " }
+        if let p = host.socketPath, !p.isEmpty { try await cmd += "export HERDR_SOCKET_PATH=\(shellQuote(socketPath())); " }
         cmd += "printf '\\033]lasso-start\\007'; exec herdr agent attach \(shellQuote(pane))\(takeover ? " --takeover" : "")"
         return try await c.pty(command: cmd, cols: cols, rows: rows)
     }

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import LassoSSH
+import Testing
 
 @Test func keyRoundTripsThroughOpenSSHFormat() throws {
     let key = SSHKey(comment: "test")
@@ -26,12 +26,13 @@ import Testing
 
 // MARK: integration — needs `scripts/it-sshd.sh start` (run via `make test-integration`)
 
-struct IT {
+enum IT {
     static let env = ProcessInfo.processInfo.environment
     static var enabled: Bool { env["LASSO_IT_HOST"] != nil }
     static var target: SSHTarget {
         SSHTarget(host: env["LASSO_IT_HOST"]!, port: Int(env["LASSO_IT_PORT"]!)!, user: env["LASSO_IT_USER"]!)
     }
+
     static func key() throws -> SSHKey { try SSHKey(openSSHPEM: String(contentsOfFile: env["LASSO_IT_KEY"]!, encoding: .utf8)) }
     static var hostKeyLine: String { (try? String(contentsOfFile: env["LASSO_IT_HOSTKEY"]!, encoding: .utf8)) ?? "" }
     static var sock: String { env["LASSO_IT_SOCK"]! }
@@ -82,7 +83,9 @@ struct IT {
         let got = Collector()
         pty.start(output: { got.append($0) }, exit: { _ in })
         pty.write(Data("lasso-pty\n".utf8))
-        for _ in 0 ..< 50 where !got.text.contains("lasso-pty") { try await Task.sleep(for: .milliseconds(100)) }
+        for _ in 0 ..< 50 where !got.text.contains("lasso-pty") {
+            try await Task.sleep(for: .milliseconds(100))
+        }
         #expect(got.text.contains("lasso-pty"))
         pty.resize(cols: 100, rows: 30)
         pty.close()
