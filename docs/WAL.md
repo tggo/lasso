@@ -36,3 +36,17 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - done: spec _bmad-output/specs/spec-lasso (9 CAPs, 14 stories)
 - open: story 1-1 make native — owner: agent, done-check: make native produces xcframeworks
 - owner: Apple team + GitHub org for publishing; push-relay ever in scope?
+
+## 2026-11-03 23:23 — MVP built
+- done: Epic 1 make native (OpenSSL 3.6.3 + libssh2 1.11.1 from pinned tarballs) + LassoSSH [source: make test-integration, 8 tests]
+- done: HerdrKit client + LassoCore (TOFU, Keychain key, live store, attach filter) [source: make test-integration, LassoCore 9 tests incl. real herdr 0.9.5]
+- done: app — hosts, Needs-you list, agent detail, libghostty terminal, local notifications [source: make test-ui screenshots build/shots]
+- done: UI review fixes applied (blocked-first, answer keys first, contrast, confirmations, probe reset)
+- done: Release installed on iPhone 16 Pro via make device [source: devicectl apps list shows dev.lasso.Lasso]
+- done: repo github.com/tggo/lasso created PRIVATE, pushed; CI running
+- decided: agent.prompt refuses blocked agents → blocked answers go as pane.send_input text+enter
+- decided: herdr attach startup probes (DA1/DA2/DECRQM) dropped for 2 s after attach, else replies land in the pane
+- negative: agent.read/agent.send_keys fail on non-agent panes → use pane.read/pane.send_input everywhere
+- open: notifications on a real device unverified (owner: agent, done-check: blocked agent → banner on iPhone)
+- owner: make repo public when ready: gh repo edit tggo/lasso --visibility public --accept-visibility-change-consequences
+- owner: authorize phone key on your Mac (key screen → Copy command) and add the host to try it for real
