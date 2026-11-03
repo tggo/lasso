@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 @main
-struct CowboyHeroApp: App {
+struct LassoApp: App {
     var body: some Scene {
         WindowGroup { ContentView() }
     }
@@ -13,7 +13,7 @@ struct ContentView: View {
         NavigationStack {
             ContentUnavailableView("No hosts yet", systemImage: "server.rack",
                                    description: Text("Add a machine running herdr over SSH."))
-                .navigationTitle("Cowboy Hero")
+                .navigationTitle("Lasso")
         }
     }
 }

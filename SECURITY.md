@@ -1,6 +1,6 @@
 # Security & trust model
 
-Cowboy Hero exists so that a herdr remote client can be **audited end to end**. Rules the code must keep:
+Lasso exists so that a herdr remote client can be **audited end to end**. Rules the code must keep:
 
 1. **No telemetry.** No analytics, crash reporting, ads or attribution SDKs. `make audit` enforces it.
 2. **No servers of ours.** The app talks only to hosts the user adds, over SSH. Any future push relay

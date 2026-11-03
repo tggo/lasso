@@ -1,7 +1,7 @@
-name: CowboyHero
+name: Lasso
 
 options:
-  bundleIdPrefix: dev.cowboyhero
+  bundleIdPrefix: dev.lasso
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -34,39 +34,39 @@ packages:
     path: Packages/HerdrKit
 
 targets:
-  CowboyHero:
+  Lasso:
     type: application
     platform: iOS
     sources:
-      - path: App/CowboyHero
+      - path: App/Lasso
     dependencies:
       - package: HerdrKit
     info:
-      path: App/CowboyHero/Info.plist
+      path: App/Lasso/Info.plist
       properties:
-        CFBundleDisplayName: Cowboy Hero
+        CFBundleDisplayName: Lasso
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
-  CowboyHeroTests:
+  LassoTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: App/CowboyHeroTests
+      - path: App/LassoTests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: CowboyHero
+      - target: Lasso
 
 schemes:
-  CowboyHero:
+  Lasso:
     build:
       targets:
-        CowboyHero: all
+        Lasso: all
     test:
       targets:
-        - CowboyHeroTests
+        - LassoTests

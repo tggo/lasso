@@ -1,4 +1,4 @@
-# Cowboy Hero — agent guide
+# Lasso — agent guide
 
 Open-source (MIT) SwiftUI iOS 18+ client for herdr. Remote access is **SSH only**: herdr's API is NDJSON
 over a local Unix socket, reached through `direct-streamlocal@openssh.com` channels.

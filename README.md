@@ -1,10 +1,10 @@
-# Cowboy Hero
+# Lasso
 
 Open-source (MIT) iOS client for [herdr](https://github.com/ogulcancelik/herdr), the agent-aware terminal
 multiplexer. Watch your coding agents, answer the blocked ones and jump into a live terminal — straight
 over SSH to your own machine. No accounts, no telemetry, no servers in between. See [SECURITY.md](SECURITY.md).
 
-Not affiliated with herdr or its author.
+Not affiliated with herdr or its author, nor with other herdr clients (Heeler, "Cowboy for Herdr").
 
 ## Build
 

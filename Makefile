@@ -1,8 +1,8 @@
 .PHONY: help bootstrap install-tools generate build build-release test test-packages test-herdrkit \
 	lint format audit open clean status device archive export testflight bump-build
 
-PROJECT := CowboyHero
-SCHEME  := CowboyHero
+PROJECT := Lasso
+SCHEME  := Lasso
 DEST    ?= platform=iOS Simulator,name=iPhone 17 Pro
 
 # Personal signing/App Store Connect settings live in a gitignored .env (see .env.example).
@@ -16,7 +16,7 @@ ASC_KEY_PATH := $(HOME)/.appstoreconnect/private_keys/AuthKey_$(ASC_KEY_ID).p8
 ASC_AUTH     := $(if $(ASC_KEY_ID),-authenticationKeyPath $(ASC_KEY_PATH) -authenticationKeyID $(ASC_KEY_ID) -authenticationKeyIssuerID $(ASC_ISSUER_ID),)
 
 help:
-	@echo "Cowboy Hero — open-source iOS client for herdr"
+	@echo "Lasso — open-source iOS client for herdr"
 	@echo ""
 	@echo "  make bootstrap      install tools + generate project"
 	@echo "  make generate       generate Xcode project (XcodeGen)"

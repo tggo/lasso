@@ -1,4 +1,4 @@
 import Testing
-@testable import CowboyHero
+@testable import Lasso
 
 @Test func appModuleLoads() { #expect(Bool(true)) }
