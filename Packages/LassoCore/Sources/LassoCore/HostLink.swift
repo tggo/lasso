@@ -19,6 +19,7 @@ public actor HostLink: HerdrTransport {
     private var conn: SSHConnection?
     private var resolvedSocket: String?
     private var resolvedHome: String?
+    private var resolvedBackend: HerdrBackend?
     /// Called once when an unpinned host key gets pinned (TOFU), so callers can persist it.
     private let onPin: @Sendable (HostKey) -> Void
     /// Decides trust for an unpinned host. Default: accept (TOFU) — UI shows the fingerprint first.
@@ -72,9 +73,32 @@ public actor HostLink: HerdrTransport {
         return r.output
     }
 
+    /// Herdr.app (herdr-core) when its socket exists and nothing herdr-specific was configured;
+    /// otherwise the herdr TUI. Detected once per link.
+    public func backend() async throws -> HerdrBackend {
+        if let resolvedBackend { return resolvedBackend }
+        var b = HerdrBackend.herdr
+        if host.wantsCore {
+            b = .core
+        } else if !host.pinsHerdrSocket {
+            let h = try await home()
+            let r = try await withRetry { try await $0.exec("test -S \(shellQuote(HerdrHost.coreSocket(home: h))) && echo core") }
+            if r.output.contains("core") { b = .core }
+        }
+        resolvedBackend = b
+        return b
+    }
+
+    public func appRequest(_ line: Data) async throws -> Data {
+        let path = try await HerdrHost.appSocket(home: home())
+        return try await withRetry { try await $0.unixRequest(path: path, line: line) }
+    }
+
     public func socketPath() async throws -> String {
         if let resolvedSocket { return resolvedSocket }
-        let p = try await host.socketPath(home: home())
+        let p = try await backend() == .core && !host.wantsCore
+            ? HerdrHost.coreSocket(home: home())
+            : host.socketPath(home: home())
         resolvedSocket = p
         return p
     }
@@ -117,6 +141,12 @@ public actor HostLink: HerdrTransport {
 
     /// Live terminal attached to a pane on a dedicated connection.
     public func attach(pane: String, takeover: Bool, cols: Int, rows: Int) async throws -> PTYChannel {
+        if try await backend() == .core {
+            let c = try await openConnection()
+            // `hc` ships with Herdr.app in ~/.local/bin; ctrl+\ detaches, closing the sheet ends it.
+            let cmd = Self.pathPrefix + "printf '\\033]lasso-start\\007'; exec hc attach \(shellQuote(pane))"
+            return try await c.pty(command: cmd, cols: cols, rows: rows)
+        }
         let c = try await openConnection()
         var cmd = Self.pathPrefix
         if let s = host.session, !s.isEmpty, host.socketPath == nil { cmd += "export HERDR_SESSION=\(shellQuote(s)); " }

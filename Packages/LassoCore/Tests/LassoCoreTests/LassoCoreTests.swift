@@ -137,3 +137,62 @@ final class Bytes: @unchecked Sendable {
     func append(_ x: Data) { l.withLock { d.append(x) } }
     var text: String { l.withLock { String(decoding: d, as: UTF8.self) } }
 }
+
+/// Herdr.app (herdr-core) over real SSH. Runs only where Herdr.app's core is running for the
+/// integration user (developer machines); CI has no Herdr.app and skips it.
+@Suite(.serialized, .enabled(if: IT.enabled && FileManager.default.fileExists(
+    atPath: NSHomeDirectory() + "/.local/state/herdr-core/default/default.sock")))
+struct HerdrAppIntegration {
+    static func host() -> HerdrHost {
+        let e = ProcessInfo.processInfo.environment
+        return HerdrHost(name: "core", target: SSHTarget(host: e["LASSO_IT_HOST"]!, port: Int(e["LASSO_IT_PORT"]!)!, user: e["LASSO_IT_USER"]!))
+    }
+
+    /// A throwaway terminal that reports working, then blocked, then waits for an answer.
+    static let fakeAgent = #"printf '\033]7501;state=working:app=lasso-it\007'; sleep 1; "#
+        + #"printf '\033]7501;state=blocked:app=lasso-it\007'; read x; echo "got-$x"; sleep 20"#
+
+    @Test @MainActor func detectsCoreAndFollowsBlockedAgent() async throws {
+        let link = try HostLink(host: Self.host(), keys: IT.keys())
+        #expect(try await link.backend() == .core)
+        let store = SessionStore(hostID: UUID(), transport: link)
+        store.start()
+        defer { store.stop() }
+        try await waitUntil { store.phase == .live }
+
+        let run = try await store.client.coreCall("terminal.run", [
+            "argv": .array(["sh", "-c", Self.fakeAgent].map(JSONValue.string)),
+            "labels": .object(["lasso": .string("it")]), "rm": .bool(true),
+        ])
+        let t = try #require(run["address"]?.stringValue)
+        defer { Task { _ = try? await HerdrClient(transport: link).coreCall("terminal.kill", ["terminal": .string(t)]) } }
+
+        try await waitUntil { store.agent(t)?.agentStatus == .working }
+        let t0 = Date()
+        try await waitUntil { store.agent(t)?.agentStatus == .blocked }
+        #expect(Date().timeIntervalSince(t0) < 2.5) // 1 s scripted gap + delivery
+        #expect(store.agentsByAttention.first?.agentStatus == .blocked)
+
+        try await store.client.prompt(t, text: "yes", isAgent: true)
+        try await waitUntilAsync(timeout: 10) { await (try? store.client.read(t, lines: 20).text.contains("got-yes")) == true }
+    }
+
+    @Test func attachesWithHc() async throws {
+        let link = try HostLink(host: Self.host(), keys: IT.keys())
+        let c = HerdrClient(transport: link)
+        let run = try await c.coreCall("terminal.run", ["argv": .array([.string("sh")]), "labels": .object(["lasso": .string("it")])])
+        let t = try #require(run["address"]?.stringValue)
+        let pty = try await link.attach(pane: t, takeover: true, cols: 80, rows: 24)
+        let out = Bytes()
+        pty.start(output: { out.append($0) }, exit: { _ in })
+        try await Task.sleep(for: .milliseconds(800))
+        pty.write(Data("echo attach-ok\r".utf8))
+        for _ in 0 ..< 60 where !out.text.contains("attach-ok") {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        #expect(out.text.contains("attach-ok"))
+        pty.close()
+        _ = try await c.coreCall("terminal.kill", ["terminal": .string(t)])
+        _ = try? await c.coreCall("terminal.rm", ["terminal": .string(t)])
+    }
+}

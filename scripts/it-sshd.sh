@@ -32,5 +32,5 @@ stop)
   [ -f "$D/sshd.pid" ] && kill "$(cat "$D/sshd.pid")" 2>/dev/null || true
   herdr session stop $SESSION >/dev/null 2>&1 || true; echo stopped;;
 env)
-  echo "LASSO_IT_HOST=127.0.0.1 LASSO_IT_PORT=$PORT LASSO_IT_USER=$(whoami) LASSO_IT_KEY=$D/client_ed25519 LASSO_IT_HOSTKEY=$D/host_ed25519.pub LASSO_IT_SOCK=$HOME/.config/herdr/sessions/$SESSION/herdr.sock";;
+  echo "LASSO_IT_HOST=127.0.0.1 LASSO_IT_PORT=$PORT LASSO_IT_USER=$(whoami) LASSO_IT_KEY=$D/client_ed25519 LASSO_IT_HOSTKEY=$D/host_ed25519.pub LASSO_IT_SOCK=$HOME/.config/herdr/sessions/$SESSION/herdr.sock$( [ -S "$HOME/.local/state/herdr-core/default/default.sock" ] && echo " LASSO_IT_CORE=1")";;
 esac

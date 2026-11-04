@@ -42,6 +42,29 @@ import XCTest
         app.buttons["Close"].tap()
     }
 
+    /// Herdr.app on this Mac (developer machines only): the seeded host has no socket, so Lasso
+    /// must detect herdr-core itself and list the real spaces.
+    func testHerdrAppSessionList() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let key = env["LASSO_IT_KEY"], let host = env["LASSO_IT_HOST"], let port = env["LASSO_IT_PORT"],
+              let user = env["LASSO_IT_USER"], env["LASSO_IT_CORE"] == "1" else { throw XCTSkip("no Herdr.app") }
+        let app = XCUIApplication()
+        app.launchEnvironment["LASSO_SEED_KEY"] = key
+        app.launchEnvironment["LASSO_SEED_HOST"] = "\(host):\(port):\(user):"
+        app.launch()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        if springboard.buttons["Allow"].waitForExistence(timeout: 3) { springboard.buttons["Allow"].tap() }
+        app.staticTexts["Local herdr"].tap()
+        app.buttons["Connect & show host key"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Herdr 0.'")).firstMatch.waitForExistence(timeout: 10),
+                      "probe reports Herdr.app")
+        app.buttons["Trust & save"].tap()
+        app.staticTexts["Local herdr"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'tab'")).firstMatch.waitForExistence(timeout: 10),
+                      "spaces listed")
+        shot(app, "4-herdr-app")
+    }
+
     private func shot(_ app: XCUIApplication, _ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name

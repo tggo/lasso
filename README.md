@@ -1,7 +1,7 @@
 # Lasso
 
-Open-source (MIT) iOS client for [herdr](https://github.com/ogulcancelik/herdr), the agent-aware
-terminal multiplexer. See which coding agents are blocked, answer them, and jump into a live
+Open-source (MIT) iOS client for [Herdr](https://herdr.dev) (Herdr.app / herdr-core) and the
+[herdr](https://github.com/ogulcancelik/herdr) TUI multiplexer, detected automatically. See which coding agents are blocked, answer them, and jump into a live
 terminal, all from your phone over plain SSH to your own machine.
 
 - **No accounts, no telemetry, no servers in between.** The app connects only to the hosts you
@@ -25,7 +25,7 @@ and "Cowboy for Herdr".
 
 ## Host setup
 
-1. Install herdr and run it (`brew install herdr`, then `herdr`).
+1. Run Herdr.app from [herdr.dev](https://herdr.dev) (or the herdr TUI: `brew install herdr`, then `herdr`).
 2. Enable SSH (macOS: System Settings → General → Sharing → Remote Login).
 3. In Lasso, tap 🔑, copy the command, and run it on the host. It appends the phone's key to `~/.ssh/authorized_keys`.
 4. Add the host (LAN IP or Tailscale name), tap **Connect & show host key**, compare the fingerprint,

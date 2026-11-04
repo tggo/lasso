@@ -101,3 +101,12 @@ the answer — a guessed criterion is worse than none.
 - tapping opens that agent
 - no push server, no relay
 **Verified:** —
+
+## Backend — Herdr.app (herdr.dev, herdr-core)
+**What:** the same app works against Herdr.app: terminals, status and I/O via herdr-core JSON-RPC (`~/.local/state/herdr-core/default/default.sock`), spaces/tabs via the desktop socket (`~/.config/herdr-app/herdr-app.sock`), live terminal via `hc attach`.
+- with Session name and Socket path empty, Lasso detects Herdr.app when its core socket exists, else uses the herdr TUI; a session name forces the TUI
+- the probe shows "Herdr <version>"; spaces, tabs and agents (terminals that report OSC 7501 status) are listed; `error` counts as blocked
+- a status change reaches the store via `events.subscribe`; answers use `terminal.send` with `force` (blocked agents), keys use `terminal.keys`
+- spaces/tabs create, rename, close go through the desktop app; with the app closed, terminals are grouped by their `herdr.space` label
+- verified: `make test-integration` (HerdrAppIntegration, on machines running Herdr.app) and `make test-ui` (testHerdrAppSessionList)
+

@@ -24,6 +24,15 @@ public struct HerdrHost: Sendable, Codable, Identifiable, Hashable {
         self.pinnedHostKey = pinnedHostKey
     }
 
+    /// Herdr.app terminal runtime socket.
+    public static func coreSocket(home: String) -> String { "\(home)/.local/state/herdr-core/default/default.sock" }
+    /// Herdr.app desktop socket (spaces, tabs).
+    public static func appSocket(home: String) -> String { "\(home)/.config/herdr-app/herdr-app.sock" }
+    /// A session name or a non-core socket path means the herdr TUI was chosen explicitly.
+    var pinsHerdrSocket: Bool { !(session ?? "").isEmpty || (!(socketPath ?? "").isEmpty && !wantsCore) }
+    /// An explicit herdr-core socket path.
+    var wantsCore: Bool { socketPath?.contains("herdr-core") ?? false }
+
     /// Socket path relative to `$HOME`, resolved on the host (sshd does not expand `~`).
     func socketPath(home: String) -> String {
         if let socketPath, !socketPath.isEmpty {

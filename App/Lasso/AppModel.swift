@@ -28,9 +28,10 @@ final class AppModel {
             if let path = env["LASSO_SEED_KEY"], let pem = try? String(contentsOfFile: path, encoding: .utf8),
                let key = try? SSHKey(openSSHPEM: pem) { keys = MemoryKeyStore(key: key) }
             if let spec = env["LASSO_SEED_HOST"] { // host:port:user:socket
-                let f = spec.split(separator: ":", maxSplits: 3).map(String.init)
+                let f = spec.split(separator: ":", maxSplits: 3, omittingEmptySubsequences: false).map(String.init)
                 if f.count == 4, let port = Int(f[1]) {
-                    seeded = [HerdrHost(name: "Local herdr", target: SSHTarget(host: f[0], port: port, user: f[2]), socketPath: f[3])]
+                    seeded = [HerdrHost(name: "Local herdr", target: SSHTarget(host: f[0], port: port, user: f[2]),
+                                        socketPath: f[3].isEmpty ? nil : f[3])]
                 }
             }
         #endif

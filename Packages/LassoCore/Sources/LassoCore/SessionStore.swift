@@ -15,6 +15,8 @@ public final class SessionStore {
     public private(set) var phase: Phase = .idle
     public private(set) var snapshot: Snapshot = .empty
     public private(set) var lastUpdate: Date?
+    /// Known after the first successful snapshot.
+    public private(set) var backend: HerdrBackend?
 
     public let client: HerdrClient
     /// Fired for every agent whose status changed between two snapshots.
@@ -74,6 +76,7 @@ public final class SessionStore {
         while !Task.isCancelled {
             phase = .connecting
             do {
+                backend = try await client.transport.backend()
                 let first = try await client.snapshot()
                 apply(first)
                 phase = .live
@@ -92,6 +95,13 @@ public final class SessionStore {
 
     /// Follows events until the stream ends or the set of panes changes (resubscribe).
     private func followEvents() async throws {
+        if try await client.transport.backend() == .core {
+            // One stream covers all terminals; the 15 s heartbeat keeps it honest.
+            let stream = client.coreEvents()
+            scheduleRefresh(delay: 0)
+            for try await _ in stream { scheduleRefresh(delay: 0.15) }
+            throw HerdrClientError.unexpected("event stream closed")
+        }
         while !Task.isCancelled {
             let panes = snapshot.panes.map(\.paneId)
             let stream = client.events(statusOf: panes)

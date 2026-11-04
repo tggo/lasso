@@ -33,7 +33,9 @@ struct SessionView: View {
                     ForEach(store.agents(in: ws.workspaceId)) { agent in
                         NavigationLink(value: agent.paneId) { AgentRow(agent: agent) }
                             .contextMenu {
-                                Button("Rename agent") { prompt = .renameAgent(agent.paneId, agent.name ?? "") }
+                                if store.backend != .core {
+                                    Button("Rename agent") { prompt = .renameAgent(agent.paneId, agent.name ?? "") }
+                                }
                             }
                     }
                     let shells = store.snapshot.panes.filter { p in p.workspaceId == ws.workspaceId && store.agent(p.paneId) == nil }

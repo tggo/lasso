@@ -30,7 +30,7 @@ struct HostEditor: View {
                     TextField("Socket path (optional)", text: Binding($host.socketPath, default: ""))
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                 } header: { Text("herdr") } footer: {
-                    Text("Leave empty for the default session (~/.config/herdr/herdr.sock).")
+                    Text("Leave both empty: Lasso finds Herdr.app (herdr.dev) or the herdr TUI on the host by itself. Session name is for the herdr TUI only.")
                 }
                 Section {
                     if let pinned = host.pinnedHostKey {
