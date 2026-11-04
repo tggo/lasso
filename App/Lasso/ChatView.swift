@@ -8,7 +8,7 @@ struct ChatView: View {
     let working: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             ForEach(Self.group(items), id: \.first!.id) { run in
                 if run.count >= 3 {
                     StepGroup(items: run, working: working, lastToolID: lastToolID)
@@ -91,32 +91,103 @@ private struct StepGroup: View {
 
 private struct UserBubble: View {
     let text: String
+    @State private var expanded = false
     var body: some View {
         HStack {
             Spacer(minLength: 48)
             Text(text)
-                .font(.callout)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 18))
+                .font(.body)
+                .lineLimit(expanded ? nil : 8)
+                .onTapGesture { expanded.toggle() }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Color(.secondarySystemFill), in: RoundedRectangle(cornerRadius: 20))
                 .textSelection(.enabled)
         }
     }
 }
 
-private struct AssistantText: View {
+/// An agent reply laid out like a chat app: headings, lists, quotes, code blocks and tables.
+struct AssistantText: View {
     let text: String
     var body: some View {
-        Text(Self.markdown(text))
-            .font(.callout)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(MarkdownBlock.parse(text).enumerated()), id: \.offset) { _, b in block(b) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .textSelection(.enabled)
     }
 
-    /// Inline markdown (bold, code, links) with line breaks kept; falls back to plain text.
-    static func markdown(_ s: String) -> AttributedString {
+    @ViewBuilder func block(_ b: MarkdownBlock) -> some View {
+        switch b {
+        case let .paragraph(t): Text(Self.inline(t)).font(.body)
+        case let .heading(level, t):
+            Text(Self.inline(t)).font(level == 1 ? .title3.bold() : level == 2 ? .headline : .subheadline.bold())
+                .padding(.top, 4)
+        case let .bullet(indent, marker, t):
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(marker).font(.body.monospacedDigit()).foregroundStyle(.secondary)
+                    .frame(minWidth: 14, alignment: .trailing)
+                Text(Self.inline(t)).font(.body)
+            }
+            .padding(.leading, CGFloat(indent) * 18)
+        case let .quote(t):
+            Text(Self.inline(t)).font(.body).foregroundStyle(.secondary)
+                .padding(.leading, 12)
+                .overlay(alignment: .leading) { Capsule().fill(.tertiary).frame(width: 3) }
+        case let .code(lang, t): CodeBlock(language: lang, text: t)
+        case let .table(rows): TableBlock(rows: rows)
+        case .rule: Divider()
+        }
+    }
+
+    /// Inline markdown (bold, italics, code, links); falls back to plain text.
+    static func inline(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(s)
+    }
+}
+
+private struct CodeBlock: View {
+    let language: String
+    let text: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(language.isEmpty ? "code" : language).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button { UIPasteboard.general.string = text } label: {
+                    Image(systemName: "doc.on.doc").font(.caption)
+                }
+                .accessibilityLabel("Copy code")
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(text).font(.system(.footnote, design: .monospaced))
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 12).padding(.bottom, 10)
+            }
+        }
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct TableBlock: View {
+    let rows: [[String]]
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
+                    GridRow {
+                        ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                            Text(AssistantText.inline(cell)).font(i == 0 ? .footnote.bold() : .footnote)
+                        }
+                    }
+                    if i == 0 { Divider() }
+                }
+            }
+            .padding(12)
+        }
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 }
 

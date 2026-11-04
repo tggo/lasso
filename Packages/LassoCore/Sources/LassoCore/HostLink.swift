@@ -160,7 +160,7 @@ public actor HostLink: HerdrTransport {
         return try await c.pty(command: cmd, cols: cols, rows: rows)
     }
 
-    private func withRetry<T: Sendable>(_ op: (SSHConnection) async throws -> T) async throws -> T {
+    func withRetry<T: Sendable>(_ op: (SSHConnection) async throws -> T) async throws -> T {
         do { return try await op(connection()) } catch let e as SSHError {
             switch e {
             case .closed, .io, .channel, .connect:

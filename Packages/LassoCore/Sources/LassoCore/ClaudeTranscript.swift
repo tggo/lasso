@@ -160,3 +160,23 @@ public extension HostLink {
         return true
     }
 }
+
+public extension HostLink {
+    /// Shell that stores stdin as `~/.cache/lasso/uploads/<name>` (files older than a week are pruned)
+    /// and prints the absolute path. Agents read images from a path given in the prompt.
+    static func uploadScript(name: String) -> String {
+        """
+        d="$HOME/.cache/lasso/uploads"; mkdir -p "$d" && chmod 700 "$d" || exit 1
+        find "$d" -type f -mtime +7 -delete 2>/dev/null
+        f="$d"/\(shellQuote(name)); cat > "$f" && echo "$f"
+        """
+    }
+
+    /// Put `data` on the host and return its path there.
+    func upload(_ data: Data, name: String) async throws -> String {
+        let r = try await withRetry { try await $0.exec(Self.uploadScript(name: name), stdin: data) }
+        let path = String(decoding: r.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard r.exitCode == 0, path.hasPrefix("/") else { throw HerdrClientError.unexpected("upload failed: \(path)") }
+        return path
+    }
+}

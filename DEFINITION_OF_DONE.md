@@ -81,6 +81,9 @@ the answer — a guessed criterion is worse than none.
 
 ## App — agent detail
 - a Claude Code agent on Herdr.app opens as chat read from its own session log (`~/.claude/sessions/<pid>.json` → `~/.claude/projects/*/<session>.jsonl`): person's messages in bubbles, replies as text, tool calls as rows that expand to output; 3+ calls in a row collapse to "N steps"; base64 images are blanked on the host; first load reads the last 3 MB, then only new bytes
+- replies render as block markdown (headings, lists, quotes, code blocks with copy, tables); the person's messages sit in grey bubbles and collapse past 8 lines (tap to expand)
+- the composer attaches images from the photo library or the clipboard ("+" menu); on send each is uploaded over SSH to `~/.cache/lasso/uploads/` (dir 0700, files older than 7 days pruned) and its path is put before the text, which Claude Code reads as an image
+- a keyboard button next to the field and a tap on the chat hide the keyboard
 - a toolbar button switches between chat and the raw screen; a blocked agent shows a "Needs you" card with the bottom of its screen above the key bar
 - output is cleaned for a phone: full-width rules become one thin line, wide space gaps shrink to three spaces, blank runs collapse; polled every 1.5 s while working, 4 s otherwise (200 lines)
 **What:** recent pane output, composer and key bar (esc, enter, tab, shift+tab, arrows, ^C, 1/2/3, y/n).

@@ -1,5 +1,6 @@
 import HerdrKit
 import LassoCore
+import PhotosUI
 import SwiftUI
 
 /// Recent output of one pane plus a composer and key bar. Polls `pane.read` while visible
@@ -19,6 +20,9 @@ struct AgentDetailView: View {
     @State private var hasChat = false
     @State private var showScreen = false
     @FocusState private var composerFocused: Bool
+    @State private var images: [UIImage] = []
+    @State private var picked: [PhotosPickerItem] = []
+    @State private var showPicker = false
 
     var body: some View {
         let store = model.store(for: host)
@@ -37,6 +41,7 @@ struct AgentDetailView: View {
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
             .defaultScrollAnchor(.bottom, for: .initialOffset)
             .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(TapGesture().onEnded { composerFocused = false })
             if let error {
                 HStack {
                     Text(error).font(.caption).foregroundStyle(.red)
@@ -49,26 +54,81 @@ struct AgentDetailView: View {
                 BlockedCard(screen: output)
             }
             KeyBar(blocked: agent?.agentStatus == .blocked) { keys in send { try await store.client.sendKeys(paneID, keys) } }
-            HStack(alignment: .bottom) {
+            if !images.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(images.indices, id: \.self) { i in
+                            Image(uiImage: images[i]).resizable().scaledToFill()
+                                .frame(width: 56, height: 56).clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(alignment: .topTrailing) {
+                                    Button { images.remove(at: i) } label: {
+                                        Image(systemName: "xmark.circle.fill").symbolRenderingMode(.palette)
+                                            .foregroundStyle(.white, .black.opacity(0.6))
+                                    }
+                                    .accessibilityLabel("Remove image")
+                                    .padding(2)
+                                }
+                        }
+                    }
+                    .padding(.horizontal, 12).padding(.top, 8)
+                }
+            }
+            HStack(alignment: .bottom, spacing: 6) {
+                Menu {
+                    Button { showPicker = true } label: { Label("Photo library", systemImage: "photo.on.rectangle") }
+                    Button {
+                        if let img = UIPasteboard.general.image { images.append(img) }
+                    } label: { Label("Paste image", systemImage: "doc.on.clipboard") }
+                } label: {
+                    Image(systemName: "plus.circle.fill").font(.title).foregroundStyle(.secondary)
+                        .frame(minWidth: 40, minHeight: 44)
+                }
+                .accessibilityLabel("Attach")
                 TextField(agent?.agentStatus == .blocked ? "Answer…" : "Message…", text: $draft, axis: .vertical)
                     .lineLimit(1 ... 6)
                     .padding(.horizontal, 14).padding(.vertical, 10)
                     .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
                     .focused($composerFocused)
+                if composerFocused {
+                    Button { composerFocused = false } label: {
+                        Image(systemName: "keyboard.chevron.compact.down").font(.title3)
+                            .frame(minWidth: 40, minHeight: 44)
+                    }
+                    .accessibilityLabel("Hide keyboard")
+                }
                 Button {
-                    let text = draft
+                    let text = draft, imgs = images
                     draft = ""
+                    images = []
                     send(restoring: text) {
-                        try await store.client.prompt(paneID, text: text, isAgent: agent != nil && agent?.agentStatus != .blocked)
+                        var paths: [String] = []
+                        if !imgs.isEmpty {
+                            guard let link = store.client.transport as? HostLink else { throw HerdrClientError.unsupported("image upload needs SSH") }
+                            for img in imgs {
+                                guard let data = img.jpegData(compressionQuality: 0.85) else { continue }
+                                paths.append(try await link.upload(data, name: "\(UUID().uuidString).jpg"))
+                            }
+                        }
+                        let full = (paths + [text]).filter { !$0.isEmpty }.joined(separator: " ")
+                        try await store.client.prompt(paneID, text: full, isAgent: agent != nil && agent?.agentStatus != .blocked)
                     }
                 } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.title)
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
-                    .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || sending)
+                    .disabled((draft.trimmingCharacters(in: .whitespaces).isEmpty && images.isEmpty) || sending)
                     .accessibilityLabel("Send")
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
+        }
+        .photosPicker(isPresented: $showPicker, selection: $picked, maxSelectionCount: 5, matching: .images)
+        .onChange(of: picked) { _, items in
+            Task { @MainActor in
+                for it in items {
+                    if let d = try? await it.loadTransferable(type: Data.self), let img = UIImage(data: d) { images.append(img) }
+                }
+                picked = []
+            }
         }
         .navigationTitle(agent?.displayName ?? paneID)
         .navigationBarTitleDisplayMode(.inline)
