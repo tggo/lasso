@@ -102,3 +102,7 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - done: block markdown in replies, image attach (Photos/clipboard → SSH upload to ~/.cache/lasso/uploads, path in prompt), hide-keyboard button + tap, long user bubbles collapse; installed on iPhone [source: commit 1e81423, make test-packages/test/lint/audit]
 - [unverified] image upload not yet exercised end-to-end on the phone
 - owner: try sending a screenshot to Claude from the phone
+
+## 2026-11-04 12:58 — terminal image paste
+- fix: ghostty-paste phone path swapped for uploaded host path, HEIC→JPEG; installed on iPhone [source: commit 491205a, make test/lint/audit]
+- [unverified] not yet tried on the phone by owner
