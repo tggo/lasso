@@ -133,3 +133,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - fix: CI failed ~4/10 runs in storeSeesWorkspaceAndAgentStatusLive; wait at LassoCoreTests:67 timed out even at 15 s → scheduleRefresh cancelled in-flight snapshots under steady events; now coalesces [source: CI run 41819739229 attempt 1, commit fba7174]
 - negative: raising timeouts alone did not help [source: same run]
 - open: CI rerun ×3 on the fix in progress; done-check = 3 green attempts
+
+## 2026-11-04 13:36 — code review fixes
+- fix: 7 of 10 review findings fixed, installed on iPhone [source: code-review high fd4575d~1..HEAD, commit 5e8f38e, make test-packages/test-integration ×2/test/lint/audit]
+- DECISION: not fixed now — ChatView eager VStack/markdown re-parse (perf, no user report yet), transcript first-line edge cases (minor), CLAUDE_CONFIG_DIR/split-path script assumptions (owner uses default ~/.claude), stalled upload with no timeout
+- closed: CI flake fix green [source: owner "вроді працює"]
