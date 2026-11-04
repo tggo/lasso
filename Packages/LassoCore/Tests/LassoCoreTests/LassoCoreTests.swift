@@ -214,6 +214,7 @@ struct HerdrAppIntegration {
 
 @Test func transcriptBuildsChatIncrementally() {
     let l1 = #"{"type":"user","uuid":"u1","message":{"role":"user","content":"fix the login"}}"#
+    // swiftlint:disable:next line_length
     let l2 = #"{"type":"assistant","uuid":"a1","message":{"role":"assistant","content":[{"type":"thinking","thinking":"x"},{"type":"text","text":"Looking."},{"type":"tool_use","id":"tu1","name":"Bash","input":{"command":"make test\nmore","description":"Run tests"}}]}}"#
     let l3 = #"{"type":"user","uuid":"u2","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu1","content":"ok","is_error":false}]}}"#
     let meta = #"{"type":"user","uuid":"m","isMeta":true,"message":{"role":"user","content":"hidden"}}"#

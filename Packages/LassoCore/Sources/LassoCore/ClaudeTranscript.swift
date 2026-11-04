@@ -42,6 +42,7 @@ public struct ClaudeTranscript: Sendable, Equatable {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     mutating func apply(_ v: JSONValue) {
         guard let type = v["type"]?.stringValue, type == "user" || type == "assistant",
               v["isSidechain"]?.boolValue != true, v["isMeta"]?.boolValue != true,
