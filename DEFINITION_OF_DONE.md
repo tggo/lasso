@@ -82,7 +82,7 @@ the answer — a guessed criterion is worse than none.
 ## App — agent detail
 - a Claude Code agent on Herdr.app opens as chat read from its own session log (`~/.claude/sessions/<pid>.json` → `~/.claude/projects/*/<session>.jsonl`): person's messages in bubbles, replies as text, tool calls as rows that expand to output; 3+ calls in a row collapse to "N steps"; base64 images are blanked on the host; first load reads the last 3 MB, then only new bytes
 - replies render as block markdown (headings, lists, quotes, code blocks with copy, tables); the person's messages sit in grey bubbles and collapse past 8 lines (tap to expand)
-- the composer attaches images from the photo library or the clipboard ("+" menu); on send each is uploaded over SSH to `~/.cache/lasso/uploads/` (dir 0700, files older than 7 days pruned) and its path is put before the text, which Claude Code reads as an image
+- the composer attaches images from the photo library ("+" menu) or the clipboard (a system Paste button shown above the field when the clipboard holds an image, so iOS does not ask "Allow Paste?"); on send each is uploaded over SSH to `~/.cache/lasso/uploads/` (dir 0700, files older than 7 days pruned) and its path is put before the text, which Claude Code reads as an image
 - an image pasted into the live terminal (libghostty writes it to the phone's `tmp/ghostty-paste/`) is uploaded the same way, converted to JPEG unless png/jpeg/gif/webp, and the host path is typed instead of the phone path; input typed meanwhile waits so order is kept
 - a context summary (`isCompactSummary`) shows as one "Context summarized" divider that opens on tap, not as a user bubble
 - a keyboard button next to the field and a tap on the chat hide the keyboard
