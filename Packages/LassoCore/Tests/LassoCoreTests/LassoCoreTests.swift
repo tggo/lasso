@@ -177,6 +177,21 @@ struct HerdrAppIntegration {
         try await waitUntilAsync(timeout: 10) { await (try? store.client.read(t, lines: 20).text.contains("got-yes")) == true }
     }
 
+    @Test func readsClaudeTranscriptOfARunningSession() async throws {
+        let link = try HostLink(host: Self.host(), keys: IT.keys())
+        let snap = try await HerdrClient(transport: link).snapshot()
+        guard let pid = snap.agents.first(where: { $0.agent == "claude-code" && $0.pid != nil })?.pid else { return }
+        var t = ClaudeTranscript()
+        var cur = TranscriptCursor()
+        #expect(try await link.readTranscript(pid: pid, into: &t, cursor: &cur))
+        #expect(!t.items.isEmpty)
+        let before = cur.offset, n = t.items.count
+        _ = try await link.readTranscript(pid: pid, into: &t, cursor: &cur) // incremental: no re-read
+        print("TRANSCRIPT items", n, "->", t.items.count, "offset", before, "->", cur.offset)
+        #expect(cur.offset >= before)
+        #expect(t.items.count >= min(n, t.maxItems)) // incremental read keeps history
+    }
+
     @Test func attachesWithHc() async throws {
         let link = try HostLink(host: Self.host(), keys: IT.keys())
         let c = HerdrClient(transport: link)
@@ -195,4 +210,32 @@ struct HerdrAppIntegration {
         _ = try await c.coreCall("terminal.kill", ["terminal": .string(t)])
         _ = try? await c.coreCall("terminal.rm", ["terminal": .string(t)])
     }
+}
+
+@Test func transcriptBuildsChatIncrementally() {
+    let l1 = #"{"type":"user","uuid":"u1","message":{"role":"user","content":"fix the login"}}"#
+    let l2 = #"{"type":"assistant","uuid":"a1","message":{"role":"assistant","content":[{"type":"thinking","thinking":"x"},{"type":"text","text":"Looking."},{"type":"tool_use","id":"tu1","name":"Bash","input":{"command":"make test\nmore","description":"Run tests"}}]}}"#
+    let l3 = #"{"type":"user","uuid":"u2","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu1","content":"ok","is_error":false}]}}"#
+    let meta = #"{"type":"user","uuid":"m","isMeta":true,"message":{"role":"user","content":"hidden"}}"#
+    let side = #"{"type":"assistant","uuid":"s","isSidechain":true,"message":{"role":"assistant","content":"sub"}}"#
+    let all = [l1, l2, meta, side, l3].joined(separator: "\n") + "\n"
+    var t = ClaudeTranscript()
+    let bytes = Data(all.utf8)
+    // Split mid-line: the second half completes it.
+    t.feed(bytes.prefix(50))
+    #expect(t.items.isEmpty)
+    t.feed(bytes.dropFirst(50))
+    #expect(t.items == [
+        .user(id: "u1", text: "fix the login"),
+        .assistant(id: "a1#1", text: "Looking."),
+        .tool(id: "tu1", name: "Bash", summary: "Run tests", result: "ok", isError: false),
+    ])
+}
+
+@Test func transcriptSkipsPartialFirstLineAndTags() {
+    var t = ClaudeTranscript()
+    let data = Data(("tail of a cut line}\n" + #"{"type":"user","uuid":"u","message":{"content":"<command-name>/clear</command-name>"}}"# + "\n"
+        + #"{"type":"user","uuid":"v","message":{"content":"real"}}"# + "\n").utf8)
+    t.feed(data, dropFirstLine: true)
+    #expect(t.items == [.user(id: "v", text: "real")])
 }

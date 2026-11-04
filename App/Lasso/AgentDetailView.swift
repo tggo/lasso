@@ -14,6 +14,10 @@ struct AgentDetailView: View {
     @State private var showTerminal = false
     @State private var sending = false
     @State private var pollNonce = 0
+    @State private var transcript = ClaudeTranscript()
+    @State private var cursor = TranscriptCursor()
+    @State private var hasChat = false
+    @State private var showScreen = false
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -21,8 +25,13 @@ struct AgentDetailView: View {
         let agent = store.agent(paneID)
         VStack(spacing: 0) {
             ScrollView {
-                TerminalText(blocks: OutputBlock.parse(output))
-                    .padding(.horizontal, 12).padding(.vertical, 8)
+                if hasChat && !showScreen {
+                    ChatView(items: transcript.items, working: agent?.agentStatus == .working)
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                } else {
+                    TerminalText(blocks: OutputBlock.parse(output))
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                }
             }
             // Sticks to the bottom only while the user is already there; reading history is not interrupted.
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
@@ -35,6 +44,9 @@ struct AgentDetailView: View {
                     Button("Retry") { pollNonce += 1 }.font(.caption)
                 }
                 .padding(.horizontal)
+            }
+            if hasChat, !showScreen, agent?.agentStatus == .blocked {
+                BlockedCard(screen: output)
             }
             KeyBar(blocked: agent?.agentStatus == .blocked) { keys in send { try await store.client.sendKeys(paneID, keys) } }
             HStack(alignment: .bottom) {
@@ -67,6 +79,14 @@ struct AgentDetailView: View {
                     if let s = agent?.agentStatus { Text(s.rawValue).font(.caption.weight(.semibold)).foregroundStyle(s.textColor) }
                 }
             }
+            if hasChat {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showScreen.toggle() } label: {
+                        Image(systemName: showScreen ? "bubble.left.and.bubble.right" : "rectangle.and.text.magnifyingglass")
+                    }
+                    .accessibilityLabel(showScreen ? "Show chat" : "Show screen")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showTerminal = true } label: { Image(systemName: "apple.terminal") }.accessibilityLabel("Open terminal")
             }
@@ -78,8 +98,19 @@ struct AgentDetailView: View {
     private func poll(_ store: SessionStore) async {
         while !Task.isCancelled {
             do {
-                let r = try await store.client.read(paneID, source: .recent, lines: 200)
-                if r.text != output { output = r.text }
+                let a = store.agent(paneID)
+                if let pid = a?.pid, a?.agent == "claude-code", let link = store.client.transport as? HostLink {
+                    var t = transcript, c = cursor
+                    let ok = try await link.readTranscript(pid: pid, into: &t, cursor: &c)
+                    if ok, t != transcript { transcript = t }
+                    cursor = c
+                    hasChat = ok
+                }
+                // The screen is still needed for a blocked dialog, the Screen view, and non-Claude panes.
+                if !hasChat || showScreen || a?.agentStatus == .blocked {
+                    let r = try await store.client.read(paneID, source: .recent, lines: 200)
+                    if r.text != output { output = r.text }
+                }
                 error = nil
             } catch { self.error = friendly(error) }
             try? await Task.sleep(for: .seconds(store.agent(paneID)?.agentStatus == .working ? 1.5 : 4))
@@ -95,6 +126,22 @@ struct AgentDetailView: View {
                 if let text, draft.isEmpty { draft = text } // don't lose what was typed
             }
         }
+    }
+}
+
+/// What a blocked agent is asking, taken from the bottom of its screen.
+struct BlockedCard: View {
+    let screen: String
+    var body: some View {
+        let lines = OutputBlock.parse(screen).suffix(4)
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Needs you", systemImage: "hand.raised.fill").font(.caption.weight(.semibold))
+                .foregroundStyle(AgentStatus.blocked.textColor)
+            ScrollView { TerminalText(blocks: Array(lines)) }.frame(maxHeight: 180)
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 10).padding(.bottom, 6)
     }
 }
 

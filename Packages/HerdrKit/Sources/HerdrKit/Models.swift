@@ -58,6 +58,8 @@ public struct Agent: Sendable, Codable, Identifiable, Equatable {
     public let cwd: String?
     public let title: String?
     public let focused: Bool
+    /// Process id of the agent (Herdr.app reports the terminal's foreground process).
+    public var pid: Int? = nil
     public var id: String { paneId }
 
     /// Best human label: explicit name, then detected agent, then pane id.

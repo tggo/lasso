@@ -120,7 +120,8 @@ public enum Core {
             // An agent is a terminal whose program reports status (OSC 7501).
             if t.v["status"] != nil, t.v["status"] != .null {
                 agents.append(Agent(paneId: t.id, workspaceId: t.space, tabId: t.tab, agentStatus: st, agent: app,
-                                    displayAgent: app.map(prettyApp), name: name ?? title, cwd: cwd, title: title, focused: false))
+                                    displayAgent: app.map(prettyApp), name: name ?? title, cwd: cwd, title: title, focused: false,
+                                    pid: t.v["foreground"]?["pid"]?.intValue))
             }
         }
         return Snapshot(version: version, protocol: generation, workspaces: workspaces, tabs: tabs, panes: panes, agents: agents)

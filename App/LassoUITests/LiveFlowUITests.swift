@@ -63,6 +63,14 @@ import XCTest
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'tab'")).firstMatch.waitForExistence(timeout: 10),
                       "spaces listed")
         shot(app, "4-herdr-app")
+        // A Claude Code agent opens as chat read from its session log.
+        app.buttons.containing(NSPredicate(format: "label CONTAINS 'done' OR label CONTAINS 'working'")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["Show screen"].waitForExistence(timeout: 10), "chat mode available")
+        sleep(1)
+        shot(app, "5-chat")
+        app.buttons["Show screen"].tap()
+        sleep(2)
+        shot(app, "6-screen")
     }
 
     private func shot(_ app: XCUIApplication, _ name: String) {

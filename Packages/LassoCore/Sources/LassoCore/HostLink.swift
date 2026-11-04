@@ -103,6 +103,11 @@ public actor HostLink: HerdrTransport {
         return p
     }
 
+    /// Run a shell command on the host (no PTY).
+    public func exec(_ command: String) async throws -> ExecResult {
+        try await withRetry { try await $0.exec(command) }
+    }
+
     public func disconnect() {
         conn?.close()
         conn = nil
