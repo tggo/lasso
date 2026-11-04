@@ -6,10 +6,12 @@ public enum ChatItem: Sendable, Equatable, Identifiable {
     case user(id: String, text: String)
     case assistant(id: String, text: String)
     case tool(id: String, name: String, summary: String, result: String?, isError: Bool)
+    /// Claude Code replaced the earlier conversation with a summary (`/compact` or auto-compact).
+    case compacted(id: String, text: String)
 
     public var id: String {
         switch self {
-        case let .user(id, _), let .assistant(id, _), let .tool(id, _, _, _, _): id
+        case let .user(id, _), let .assistant(id, _), let .tool(id, _, _, _, _), let .compacted(id, _): id
         }
     }
 }
@@ -49,6 +51,10 @@ public struct ClaudeTranscript: Sendable, Equatable {
               let msg = v["message"] else { return }
         let uuid = v["uuid"]?.stringValue ?? UUID().uuidString
         let content = msg["content"]
+        if v["isCompactSummary"]?.boolValue == true {
+            add(.compacted(id: uuid, text: content?.stringValue ?? Self.text(content)))
+            return
+        }
         if let s = content?.stringValue {
             if type == "user" { addUser(uuid, s) } else { add(.assistant(id: uuid, text: s)) }
             return

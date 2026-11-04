@@ -34,6 +34,7 @@ struct ChatView: View {
         switch item {
         case let .user(_, text): UserBubble(text: text)
         case let .assistant(_, text): AssistantText(text: text)
+        case let .compacted(_, text): CompactedRow(text: text)
         case let .tool(_, name, summary, result, isError):
             ToolRow(name: name, summary: summary, result: result, isError: isError,
                     running: result == nil && working && item.id == lastToolID)
@@ -249,5 +250,26 @@ private struct ToolRow: View {
     static func clip(_ s: String) -> String {
         let lines = s.split(separator: "\n", omittingEmptySubsequences: false)
         return lines.count > 40 ? lines.prefix(40).joined(separator: "\n") + "\n… \(lines.count - 40) more lines" : s
+    }
+}
+
+/// Where Claude Code summarized the earlier conversation; the summary opens on tap.
+private struct CompactedRow: View {
+    let text: String
+    @State private var open = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button { withAnimation(.snappy) { open.toggle() } } label: {
+                HStack(spacing: 8) {
+                    Rectangle().fill(.quaternary).frame(height: 1)
+                    Label("Context summarized", systemImage: "arrow.triangle.2.circlepath").font(.caption)
+                        .foregroundStyle(.secondary).fixedSize()
+                    Rectangle().fill(.quaternary).frame(height: 1)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if open { AssistantText(text: text).font(.footnote).foregroundStyle(.secondary) }
+        }
     }
 }

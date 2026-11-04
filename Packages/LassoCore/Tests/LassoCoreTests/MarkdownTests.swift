@@ -1,3 +1,4 @@
+import Foundation
 @testable import LassoCore
 import Testing
 
@@ -50,4 +51,10 @@ import Testing
     let s = "\u{1B}[200~/private/var/mobile/Containers/Data/Application/8C/tmp/ghostty-paste/image-1.heic\u{1B}[201~"
     #expect(PastedFiles.localPaths(in: s) == ["/private/var/mobile/Containers/Data/Application/8C/tmp/ghostty-paste/image-1.heic"])
     #expect(PastedFiles.localPaths(in: "ls /tmp").isEmpty)
+}
+
+@Test func compactSummaryIsNotAUserMessage() {
+    var t = ClaudeTranscript()
+    t.feed(Data(#"{"type":"user","uuid":"u1","isCompactSummary":true,"message":{"role":"user","content":"This session is being continued"}}"#.utf8 + [0x0A]))
+    #expect(t.items == [.compacted(id: "u1", text: "This session is being continued")])
 }
