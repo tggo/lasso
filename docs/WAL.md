@@ -106,3 +106,7 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 ## 2026-11-04 12:58 — terminal image paste
 - fix: ghostty-paste phone path swapped for uploaded host path, HEIC→JPEG; installed on iPhone [source: commit 491205a, make test/lint/audit]
 - [unverified] not yet tried on the phone by owner
+
+## 2026-11-04 13:00 — compact summary row; terminal image paste confirmed
+- closed: terminal image paste works on phone [source: owner's screenshot arrived as ~/.cache/lasso/uploads/A0488F1F….jpg]
+- fix: compact summary as divider row, installed on iPhone [source: commit 35edf9c]
