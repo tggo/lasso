@@ -76,12 +76,6 @@ struct AgentDetailView: View {
             HStack(alignment: .bottom, spacing: 6) {
                 Menu {
                     Button { showPicker = true } label: { Label("Photo library", systemImage: "photo.on.rectangle") }
-                } label: {
-                    Image(systemName: "plus.circle.fill").font(.title).foregroundStyle(.secondary)
-                        .frame(minWidth: 40, minHeight: 44)
-                }
-                .accessibilityLabel("Attach")
-                if UIPasteboard.general.hasImages {
                     // The system Paste button reads the clipboard without iOS asking "Allow Paste?".
                     PasteButton(supportedContentTypes: [.image]) { providers in
                         for p in providers {
@@ -91,9 +85,11 @@ struct AgentDetailView: View {
                             }
                         }
                     }
-                    .labelStyle(.iconOnly).buttonBorderShape(.circle).controlSize(.small)
-                    .padding(.bottom, 8)
+                } label: {
+                    Image(systemName: "plus.circle.fill").font(.title).foregroundStyle(.secondary)
+                        .frame(minWidth: 40, minHeight: 44)
                 }
+                .accessibilityLabel("Attach")
                 TextField(agent?.agentStatus == .blocked ? "Answer…" : "Message…", text: $draft, axis: .vertical)
                     .lineLimit(1 ... 6)
                     .padding(.horizontal, 14).padding(.vertical, 10)
