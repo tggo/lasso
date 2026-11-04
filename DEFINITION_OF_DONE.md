@@ -80,6 +80,7 @@ the answer — a guessed criterion is worse than none.
 **Verified:** `make test-ui` against local herdr (blocked + working agents listed) — 2026-11-03.
 
 ## App — agent detail
+- output is cleaned for a phone: full-width rules become one thin line, wide space gaps shrink to three spaces, blank runs collapse; polled every 1.5 s while working, 4 s otherwise (200 lines)
 **What:** recent pane output, composer and key bar (esc, enter, tab, shift+tab, arrows, ^C, 1/2/3, y/n).
 **DoD:**
 - output refreshes every 1 s while the agent works, 2.5 s otherwise

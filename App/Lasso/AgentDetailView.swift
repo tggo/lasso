@@ -21,11 +21,8 @@ struct AgentDetailView: View {
         let agent = store.agent(paneID)
         VStack(spacing: 0) {
             ScrollView {
-                Text(output.isEmpty ? " " : output)
-                    .font(.system(.caption, design: .monospaced))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
-                    .padding(10)
+                TerminalText(blocks: OutputBlock.parse(output))
+                    .padding(.horizontal, 12).padding(.vertical, 8)
             }
             // Sticks to the bottom only while the user is already there; reading history is not interrupted.
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
@@ -41,9 +38,10 @@ struct AgentDetailView: View {
             }
             KeyBar(blocked: agent?.agentStatus == .blocked) { keys in send { try await store.client.sendKeys(paneID, keys) } }
             HStack(alignment: .bottom) {
-                TextField(agent?.agentStatus == .blocked ? "Answer…" : "Prompt…", text: $draft, axis: .vertical)
+                TextField(agent?.agentStatus == .blocked ? "Answer…" : "Message…", text: $draft, axis: .vertical)
                     .lineLimit(1 ... 6)
-                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
                     .focused($composerFocused)
                 Button {
                     let text = draft
@@ -58,7 +56,7 @@ struct AgentDetailView: View {
                     .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || sending)
                     .accessibilityLabel("Send")
             }
-            .padding(8)
+            .padding(.horizontal, 10).padding(.vertical, 8)
         }
         .navigationTitle(agent?.displayName ?? paneID)
         .navigationBarTitleDisplayMode(.inline)
@@ -80,11 +78,11 @@ struct AgentDetailView: View {
     private func poll(_ store: SessionStore) async {
         while !Task.isCancelled {
             do {
-                let r = try await store.client.read(paneID, source: .recent, lines: 400)
+                let r = try await store.client.read(paneID, source: .recent, lines: 200)
                 if r.text != output { output = r.text }
                 error = nil
             } catch { self.error = friendly(error) }
-            try? await Task.sleep(for: .seconds(store.agent(paneID)?.agentStatus == .working ? 1 : 2.5))
+            try? await Task.sleep(for: .seconds(store.agent(paneID)?.agentStatus == .working ? 1.5 : 4))
         }
     }
 
@@ -132,5 +130,64 @@ struct KeyBar: View {
         }
         .padding(.vertical, 4)
         .background(.bar)
+    }
+}
+
+/// Terminal text cleaned up for a phone: full-width rules (an agent's input box, separators)
+/// become one thin line, trailing spaces go, and runs of blank lines collapse.
+enum OutputBlock: Equatable {
+    case text(String), rule
+
+    static func parse(_ raw: String) -> [OutputBlock] {
+        var out: [OutputBlock] = []
+        var buf: [String] = []
+        var blanks = 0
+        func flush() {
+            if !buf.isEmpty { out.append(.text(buf.joined(separator: "\n"))); buf = [] }
+        }
+        for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
+            // Trailing padding goes; wide gaps (right-aligned prompts, status columns) shrink so
+            // a 200-column line does not wrap into fragments on a phone.
+            let l = String(line.reversed().drop { $0 == " " }.reversed())
+                .replacingOccurrences(of: " {6,}", with: "   ", options: .regularExpression)
+            if isRule(l) {
+                flush()
+                blanks = 0
+                if out.last != .rule { out.append(.rule) }
+            } else if l.isEmpty {
+                blanks += 1
+                if blanks == 1, !buf.isEmpty { buf.append("") }
+            } else {
+                blanks = 0
+                buf.append(l)
+            }
+        }
+        flush()
+        while out.first == .rule { out.removeFirst() }
+        return out
+    }
+
+    /// A line drawn only with box/rule characters, at least 8 of them.
+    static func isRule(_ l: String) -> Bool {
+        let t = l.trimmingCharacters(in: .whitespaces)
+        return t.count >= 8 && t.allSatisfy { "─━═_—-╌┄╴╶▔▁".contains($0) }
+    }
+}
+
+struct TerminalText: View {
+    let blocks: [OutputBlock]
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, b in
+                switch b {
+                case let .text(t):
+                    Text(t).font(.system(.caption, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                case .rule:
+                    Rectangle().fill(.separator).frame(height: 1).padding(.vertical, 2)
+                }
+            }
+        }
     }
 }
