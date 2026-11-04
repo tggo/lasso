@@ -79,3 +79,9 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - done: save unverified host drafts, key shown when herdr down, friendly socket error, app icon (Flux on gpu0); installed on iPhone [source: commit dde0605, make test-ui green]
 - found: owner runs Herdr.app (herdr-app 0.1.10, herdr-core JSON-RPC at ~/.local/state/herdr-core/default/default.sock), not herdr 0.9.5; `ping` unknown there, Lasso cannot talk to it yet [source: nc probe of sockets]
 - owner: support herdr-core backend in Lasso, or run plain `herdr` on the Mac?
+
+## 2026-11-04 09:42 — Herdr.app backend
+- done: Herdr.app (herdr-core JSON-RPC + desktop socket + hc attach) auto-detected; TUI path unchanged; installed on iPhone [source: commit f613ff3; make test-integration HerdrAppIntegration + make test-ui testHerdrAppSessionList green against live Herdr.app]
+- mistake: first version targeted herdr TUI 0.9.5 (brew) without checking which herdr the owner runs; owner uses herdr.dev Herdr.app
+- closed: owner question on backend choice — support Herdr.app [source: owner message]
+- owner: verify on phone against macstudio (Address, user ruslan, leave Session/Socket empty)
