@@ -143,3 +143,6 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - negative: non-cancelling refresh did not fix it — 1 of 3 CI attempts still failed at LassoCoreTests:67 [source: CI run 41820993400 attempt 3]
 - fix: re-snapshot on subscribe ack (event gap between first snapshot and live subscription); diagnostic added to the test [source: commit e641fcf]
 - open: CI ×4 on this commit; done-check = 4 green, else read the "store missed workspace" diagnostic
+
+## 2026-11-04 14:01 — CI flake closed
+- closed: CI 4/4 green on the subscribe-ack fix [source: CI run 41823863500 attempts 1–4]
