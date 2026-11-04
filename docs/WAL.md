@@ -110,3 +110,6 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 ## 2026-11-04 13:00 — compact summary row; terminal image paste confirmed
 - closed: terminal image paste works on phone [source: owner's screenshot arrived as ~/.cache/lasso/uploads/A0488F1F….jpg]
 - fix: compact summary as divider row, installed on iPhone [source: commit 35edf9c]
+
+## 2026-11-04 13:00 — push retry
+- DECISION: WAL commit 2f106e4 pushed after GitHub 500 retries; no state change beyond the previous entry [source: git status main...origin/main]
