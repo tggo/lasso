@@ -128,3 +128,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 ## 2026-11-04 13:07 — paste hint
 - closed: PasteButton in Menu still prompts per paste [source: owner on phone]; replaced by named Button + one-time Settings alert, installed [source: commit f375030]
 - owner enabled Paste from Other Apps → Allow [source: owner]
+
+## 2026-11-04 13:27 — CI flake root cause
+- fix: CI failed ~4/10 runs in storeSeesWorkspaceAndAgentStatusLive; wait at LassoCoreTests:67 timed out even at 15 s → scheduleRefresh cancelled in-flight snapshots under steady events; now coalesces [source: CI run 41819739229 attempt 1, commit fba7174]
+- negative: raising timeouts alone did not help [source: same run]
+- open: CI rerun ×3 on the fix in progress; done-check = 3 green attempts
