@@ -85,3 +85,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - mistake: first version targeted herdr TUI 0.9.5 (brew) without checking which herdr the owner runs; owner uses herdr.dev Herdr.app
 - closed: owner question on backend choice — support Herdr.app [source: owner message]
 - owner: verify on phone against macstudio (Address, user ruslan, leave Session/Socket empty)
+
+## 2026-11-04 10:08 — agent view readability; Mac lag investigation
+- done: agent output cleanup + lighter polling, installed on iPhone [source: commit 32a9eef, make test-ui green]
+- found: simulated phone load (app ls + terminal.read every 150 ms) adds no Herdr.app CPU, 1-4 ms per call; lag cause unknown [source: scratchpad load.py]
+- owner: reproduce the typing lag with the phone connected; 1 Hz CPU monitor is recording
