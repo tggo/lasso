@@ -94,3 +94,6 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 ## 2026-11-04 11:03 — Claude chat view
 - done: Claude agents render as chat from ~/.claude JSONL (Heeler approach), base64 stripped on host, installed on iPhone [source: commit fd4575d, make test-ui 5-chat.png]
 - owner: still waiting for lag repro (monitor running)
+
+## 2026-11-04 11:03 — lint cleanup
+- DECISION: lint-only commit pushed, no behaviour change [source: commit 8f5dad5]
