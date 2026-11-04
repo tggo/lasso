@@ -74,3 +74,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - decided: CI selects the newest Xcode 26; README states that Xcode 26 is the minimum to build
 - open: full CI green — owner: agent, done-check: next run success
 - closed: full CI green (audit, lint, package tests, integration with real herdr, app build on Xcode 26) [source: gh run 41724552076 success]
+
+## 2026-11-04 09:31 — host drafts, icon; Herdr.app is a different backend
+- done: save unverified host drafts, key shown when herdr down, friendly socket error, app icon (Flux on gpu0); installed on iPhone [source: commit dde0605, make test-ui green]
+- found: owner runs Herdr.app (herdr-app 0.1.10, herdr-core JSON-RPC at ~/.local/state/herdr-core/default/default.sock), not herdr 0.9.5; `ping` unknown there, Lasso cannot talk to it yet [source: nc probe of sockets]
+- owner: support herdr-core backend in Lasso, or run plain `herdr` on the Mac?
