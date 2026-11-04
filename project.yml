@@ -50,6 +50,9 @@ targets:
     platform: iOS
     sources:
       - path: App/Lasso
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
       - package: HerdrKit
       - package: LassoSSH

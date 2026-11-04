@@ -109,12 +109,18 @@ final class AppModel {
     }
 
     /// Probe a host before saving it: connect, return the presented host key (TOFU step).
-    func probe(_ host: HerdrHost) async throws -> (HostKey, PongInfo) {
+    /// SSH-level failures throw. If SSH works but herdr does not answer, the host key is still
+    /// returned (so it can be trusted) together with the herdr error.
+    func probe(_ host: HerdrHost) async throws -> (HostKey, Result<PongInfo, Error>) {
         let link = HostLink(host: host, keys: keys)
-        let pong = try await HerdrClient(transport: link).ping()
+        let pong: Result<PongInfo, Error>
+        do { pong = try await .success(HerdrClient(transport: link).ping()) } catch { pong = .failure(error) }
         let key = await link.host.pinnedHostKey ?? host.pinnedHostKey
         await link.disconnect()
-        guard let key else { throw SSHError.handshake("no host key") }
+        guard let key else {
+            if case let .failure(e) = pong { throw e }
+            throw SSHError.handshake("no host key")
+        }
         return (key, pong)
     }
 

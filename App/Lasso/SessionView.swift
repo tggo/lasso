@@ -158,6 +158,11 @@ enum CloseConfirm {
 /// Human-readable error text instead of a Swift dump.
 func friendly(_ error: Error) -> String {
     if let e = error as? LocalizedError, let d = e.errorDescription { return d }
+    let text = String(describing: error)
+    if text.contains("streamlocal"), text.contains("connect failed") {
+        return "SSH works, but herdr isn't running on the host (no socket). Start `herdr` there, "
+            + "or set the Session name / Socket path. Details: \(text)"
+    }
     // Lasso's own errors implement CustomStringConvertible with readable text.
     return String(describing: error)
 }

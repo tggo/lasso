@@ -14,6 +14,14 @@ import XCTest
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         if springboard.buttons["Allow"].waitForExistence(timeout: 3) { springboard.buttons["Allow"].tap() }
 
+        // Seeded host is an unverified draft: tapping opens the editor; verify and trust it.
+        app.staticTexts["Local herdr"].tap()
+        XCTAssertTrue(app.staticTexts["Not verified"].exists || app.buttons["Connect & show host key"].waitForExistence(timeout: 3))
+        app.buttons["Connect & show host key"].tap()
+        let trust = app.buttons["Trust & save"]
+        XCTAssertTrue(trust.waitForExistence(timeout: 10), "host key shown")
+        shot(app, "0-trust")
+        trust.tap()
         app.staticTexts["Local herdr"].tap()
         let blocked = app.staticTexts["blocked"].firstMatch
         XCTAssertTrue(blocked.waitForExistence(timeout: 10), "blocked agent listed")

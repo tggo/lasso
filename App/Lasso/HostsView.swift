@@ -14,7 +14,13 @@ struct HostsView: View {
         NavigationStack(path: $path) {
             List {
                 ForEach(model.hosts) { host in
-                    NavigationLink(value: host.id) { HostRow(host: host) }
+                    Group {
+                        if host.pinnedHostKey == nil {
+                            Button { editing = host } label: { HostRow(host: host) }.foregroundStyle(.primary)
+                        } else {
+                            NavigationLink(value: host.id) { HostRow(host: host) }
+                        }
+                    }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) { deleting = host } label: { Label("Delete", systemImage: "trash") }
                             Button { editing = host } label: { Label("Edit", systemImage: "pencil") }.tint(.blue)
@@ -76,7 +82,9 @@ struct HostRow: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if let store, store.blockedCount > 0 {
+            if host.pinnedHostKey == nil {
+                Text("Not verified").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+            } else if let store, store.blockedCount > 0 {
                 Text("\(store.blockedCount)")
                     .font(.caption.bold()).padding(.horizontal, 8).padding(.vertical, 2)
                     .background(AgentStatus.blocked.textColor, in: Capsule()).foregroundStyle(.white)

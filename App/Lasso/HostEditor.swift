@@ -3,15 +3,15 @@ import LassoCore
 import LassoSSH
 import SwiftUI
 
-/// Add/edit a host. Saving a new host requires a successful probe: the user sees the
-/// host-key fingerprint and explicitly trusts it (TOFU), which pins it.
+/// Add/edit a host. A host can be saved as an unverified draft at any time; it only connects
+/// after a probe shows the host-key fingerprint and the user taps "Trust & save" (TOFU pin).
 struct HostEditor: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State var host: HerdrHost
     @State private var port = "22"
     @State private var probing = false
-    @State private var probed: (HostKey, PongInfo)?
+    @State private var probed: (HostKey, Result<PongInfo, Error>)?
     @State private var error: String?
 
     var body: some View {
@@ -41,7 +41,12 @@ struct HostEditor: View {
                             model.forgetHostKey(host.id)
                         }
                     } else if let (key, pong) = probed {
-                        LabeledContent("herdr", value: "\(pong.version) (protocol \(pong.protocol))")
+                        switch pong {
+                        case let .success(p): LabeledContent("herdr", value: "\(p.version) (protocol \(p.protocol))")
+                        case let .failure(e):
+                            Label(friendly(e), systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.callout)
+                            Button("Retry herdr") { Task { await probe() } }
+                        }
                         LabeledContent("Key type", value: key.type)
                         Text(key.fingerprint).font(.caption.monospaced()).textSelection(.enabled)
                         Text(
@@ -57,7 +62,11 @@ struct HostEditor: View {
                         .disabled(!isValid || probing)
                     }
                     if let error { Text(error).foregroundStyle(.red).font(.callout) }
-                } header: { Text("Host key") }
+                } header: { Text("Host key") } footer: {
+                    if host.pinnedHostKey == nil && probed == nil {
+                        Text("You can save now and verify later. Lasso won't connect until the host key is trusted.")
+                    }
+                }
             }
             .navigationTitle(host.name.isEmpty ? "New host" : host.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -65,7 +74,7 @@ struct HostEditor: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(host.pinnedHostKey == nil && probed != nil ? "Trust & save" : "Save") { save() }
-                        .disabled(!isValid || (host.pinnedHostKey == nil && probed == nil))
+                        .disabled(host.target.host.isEmpty && host.name.isEmpty)
                 }
             }
             .onAppear { port = String(host.target.port) }
@@ -94,7 +103,7 @@ struct HostEditor: View {
     private func save() {
         host.target.port = Int(port) ?? 22
         if host.pinnedHostKey == nil, let (key, _) = probed { host.pinnedHostKey = key }
-        if host.name.isEmpty { host.name = host.target.host }
+        if host.name.isEmpty { host.name = host.target.host.isEmpty ? "Draft" : host.target.host }
         model.save(host)
         dismiss()
     }

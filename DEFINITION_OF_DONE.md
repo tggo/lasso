@@ -64,7 +64,9 @@ the answer — a guessed criterion is worse than none.
 ## App — hosts and device key
 **What:** add/edit/delete hosts; one on-device Ed25519 key shown for authorized_keys.
 **DoD:**
-- a new host can be saved only after "Connect & show host key" succeeds and the user taps "Trust & save" (fingerprint shown)
+- a host can be saved as a draft at any point (no probe needed); an unpinned host shows "Not verified", tapping it reopens the editor, and nothing connects to it
+- "Connect & show host key" shows the fingerprint whenever SSH succeeds, even if herdr is not reachable (the herdr error is shown next to it); "Trust & save" pins it
+- a missing herdr socket reads "SSH works, but herdr isn't running on the host" instead of a raw channel error
 - the key screen shows the `ssh-ed25519 …` line, a copy button and the fingerprint
 - "Forget pinned key" clears the pin; the next connect shows the new fingerprint
 **Verified:** —
