@@ -45,3 +45,9 @@ import Testing
     #expect(s.contains(".cache/lasso/uploads"))
     #expect(s.contains("'a b.png'"))
 }
+
+@Test func findsGhosttyPastePaths() {
+    let s = "\u{1B}[200~/private/var/mobile/Containers/Data/Application/8C/tmp/ghostty-paste/image-1.heic\u{1B}[201~"
+    #expect(PastedFiles.localPaths(in: s) == ["/private/var/mobile/Containers/Data/Application/8C/tmp/ghostty-paste/image-1.heic"])
+    #expect(PastedFiles.localPaths(in: "ls /tmp").isEmpty)
+}

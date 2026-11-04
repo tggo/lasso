@@ -180,3 +180,12 @@ public extension HostLink {
         return path
     }
 }
+
+/// libghostty pastes an image as a file in the app's own tmp (`…/tmp/ghostty-paste/<file>`), a path that
+/// means nothing on the host. These find such paths in terminal input so they can be uploaded and swapped.
+public enum PastedFiles {
+    public static func localPaths(in s: String) -> [String] {
+        guard let re = try? NSRegularExpression(pattern: #"/[^\s'"\x1b]*/ghostty-paste/[^\s'"\x1b]+"#) else { return [] }
+        return re.matches(in: s, range: NSRange(s.startIndex..., in: s)).compactMap { Range($0.range, in: s).map { String(s[$0]) } }
+    }
+}

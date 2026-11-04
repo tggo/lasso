@@ -70,7 +70,7 @@ final class TerminalBridge {
     @ObservationIgnored private var pty: PTYChannel?
     @ObservationIgnored private let state = BridgeState()
     @ObservationIgnored lazy var session = InMemoryTerminalSession(
-        write: { [state] data in state.pty?.write(data) },
+        write: { [state] data in state.write(data) },
         resize: { [state] vp in
             state.size = (Int(vp.columns), Int(vp.rows))
             state.pty?.resize(cols: Int(vp.columns), rows: Int(vp.rows))
@@ -86,6 +86,7 @@ final class TerminalBridge {
             let p = try await link.attach(pane: pane, takeover: takeover, cols: cols, rows: rows)
             pty = p
             state.pty = p
+            state.link = link
             let session = session
             let filter = AttachFilter()
             p.start(output: { data in
@@ -112,4 +113,41 @@ final class BridgeState: @unchecked Sendable {
     private var _size: (Int, Int)?
     var pty: PTYChannel? { get { lock.withLock { _pty } } set { lock.withLock { _pty = newValue } } }
     var size: (Int, Int)? { get { lock.withLock { _size } } set { lock.withLock { _size = newValue } } }
+    private var _link: HostLink?
+    var link: HostLink? { get { lock.withLock { _link } } set { lock.withLock { _link = newValue } } }
+    private var chain: Task<Void, Never>?
+
+    /// Keystrokes go straight to the PTY, except a pasted image: its phone-local file is uploaded to the
+    /// host first and the host path is typed instead. Later input waits behind it so order is kept.
+    func write(_ data: Data) {
+        let text = String(decoding: data, as: UTF8.self)
+        let paths = text.contains("ghostty-paste") ? PastedFiles.localPaths(in: text) : []
+        lock.lock()
+        let prev = chain
+        if paths.isEmpty, prev == nil { lock.unlock(); pty?.write(data); return }
+        let t = Task { [weak self] in
+            await prev?.value
+            guard let self else { return }
+            var out = text
+            for p in paths {
+                guard let link, var d = FileManager.default.contents(atPath: p) else { continue }
+                var ext = (p as NSString).pathExtension.lowercased()
+                // Agents read png/jpeg/gif/webp; HEIC from the photo library is converted.
+                if !["png", "jpg", "jpeg", "gif", "webp"].contains(ext), let j = UIImage(data: d)?.jpegData(compressionQuality: 0.85) {
+                    d = j
+                    ext = "jpg"
+                }
+                let name = UUID().uuidString + "." + ext
+                if let remote = try? await link.upload(d, name: name) { out = out.replacingOccurrences(of: p, with: remote) }
+            }
+            pty?.write(paths.isEmpty ? data : Data(out.utf8))
+        }
+        chain = t
+        lock.unlock()
+        Task { [weak self] in
+            await t.value
+            guard let self else { return }
+            lock.withLock { if chain == t { chain = nil } }
+        }
+    }
 }
