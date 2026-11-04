@@ -24,6 +24,7 @@ public final class SessionStore {
 
     private var loop: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
+    private var refreshDirty = false
     private var wake: CheckedContinuation<Void, Never>?
 
     public init(hostID: UUID, transport: HerdrTransport) {
@@ -59,6 +60,7 @@ public final class SessionStore {
         loop?.cancel()
         loop = nil
         refreshTask?.cancel()
+        refreshTask = nil
         phase = .idle
     }
 
@@ -116,12 +118,19 @@ public final class SessionStore {
         }
     }
 
+    /// Coalesce events into snapshots. A snapshot already on the wire is never cancelled (on a slow link a
+    /// steady event flow would otherwise cancel every one); events during it mark the store dirty and one
+    /// more snapshot follows.
     private func scheduleRefresh(delay: Double) {
-        refreshTask?.cancel()
+        if refreshTask != nil { refreshDirty = true; return }
         refreshTask = Task { [weak self] in
             if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-            guard !Task.isCancelled, let self else { return }
-            if let s = try? await client.snapshot() { apply(s) }
+            while let self, !Task.isCancelled {
+                refreshDirty = false
+                if let s = try? await client.snapshot(), !Task.isCancelled { apply(s) }
+                if !refreshDirty { break }
+            }
+            self?.refreshTask = nil
         }
     }
 
