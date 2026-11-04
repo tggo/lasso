@@ -138,3 +138,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - fix: 7 of 10 review findings fixed, installed on iPhone [source: code-review high fd4575d~1..HEAD, commit 5e8f38e, make test-packages/test-integration ×2/test/lint/audit]
 - DECISION: not fixed now — ChatView eager VStack/markdown re-parse (perf, no user report yet), transcript first-line edge cases (minor), CLAUDE_CONFIG_DIR/split-path script assumptions (owner uses default ~/.claude), stalled upload with no timeout
 - closed: CI flake fix green [source: owner "вроді працює"]
+
+## 2026-11-04 13:48 — CI flake, second cause
+- negative: non-cancelling refresh did not fix it — 1 of 3 CI attempts still failed at LassoCoreTests:67 [source: CI run 41820993400 attempt 3]
+- fix: re-snapshot on subscribe ack (event gap between first snapshot and live subscription); diagnostic added to the test [source: commit e641fcf]
+- open: CI ×4 on this commit; done-check = 4 green, else read the "store missed workspace" diagnostic
