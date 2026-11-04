@@ -73,22 +73,6 @@ struct AgentDetailView: View {
                     .padding(.horizontal, 12).padding(.top, 8)
                 }
             }
-            if UIPasteboard.general.hasImages, images.isEmpty {
-                // The system Paste button reads the clipboard without iOS asking "Allow Paste?".
-                HStack {
-                    PasteButton(supportedContentTypes: [.image]) { providers in
-                        for p in providers {
-                            _ = p.loadDataRepresentation(for: .image) { data, _ in
-                                guard let data, let img = UIImage(data: data) else { return }
-                                Task { @MainActor in images.append(img) }
-                            }
-                        }
-                    }
-                    .labelStyle(.titleAndIcon).buttonBorderShape(.capsule).controlSize(.small)
-                    Spacer()
-                }
-                .padding(.horizontal, 12).padding(.top, 6)
-            }
             HStack(alignment: .bottom, spacing: 6) {
                 Menu {
                     Button { showPicker = true } label: { Label("Photo library", systemImage: "photo.on.rectangle") }
@@ -97,6 +81,19 @@ struct AgentDetailView: View {
                         .frame(minWidth: 40, minHeight: 44)
                 }
                 .accessibilityLabel("Attach")
+                if UIPasteboard.general.hasImages {
+                    // The system Paste button reads the clipboard without iOS asking "Allow Paste?".
+                    PasteButton(supportedContentTypes: [.image]) { providers in
+                        for p in providers {
+                            _ = p.loadDataRepresentation(for: .image) { data, _ in
+                                guard let data, let img = UIImage(data: data) else { return }
+                                Task { @MainActor in images.append(img) }
+                            }
+                        }
+                    }
+                    .labelStyle(.iconOnly).buttonBorderShape(.circle).controlSize(.small)
+                    .padding(.bottom, 8)
+                }
                 TextField(agent?.agentStatus == .blocked ? "Answer…" : "Message…", text: $draft, axis: .vertical)
                     .lineLimit(1 ... 6)
                     .padding(.horizontal, 14).padding(.vertical, 10)
