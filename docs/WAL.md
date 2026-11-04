@@ -97,3 +97,8 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 
 ## 2026-11-04 11:03 — lint cleanup
 - DECISION: lint-only commit pushed, no behaviour change [source: commit 8f5dad5]
+
+## 2026-11-04 12:57 — markdown chat, image attach, hide keyboard
+- done: block markdown in replies, image attach (Photos/clipboard → SSH upload to ~/.cache/lasso/uploads, path in prompt), hide-keyboard button + tap, long user bubbles collapse; installed on iPhone [source: commit 1e81423, make test-packages/test/lint/audit]
+- [unverified] image upload not yet exercised end-to-end on the phone
+- owner: try sending a screenshot to Claude from the phone
