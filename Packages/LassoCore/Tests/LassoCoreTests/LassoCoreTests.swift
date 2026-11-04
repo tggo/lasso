@@ -110,10 +110,11 @@ enum IT {
     }
 }
 
-@MainActor func waitUntil(timeout: Double = 5, _ cond: @MainActor () -> Bool) async throws {
+@MainActor func waitUntil(timeout: Double = 5, sourceLocation: SourceLocation = #_sourceLocation,
+                          _ cond: @MainActor () -> Bool) async throws {
     let end = Date().addingTimeInterval(timeout)
     while !cond() {
-        guard Date() < end else { Issue.record("timed out"); throw CancellationError() }
+        guard Date() < end else { Issue.record("timed out", sourceLocation: sourceLocation); throw CancellationError() }
         try await Task.sleep(for: .milliseconds(50))
     }
 }
