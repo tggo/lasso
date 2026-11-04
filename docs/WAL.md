@@ -113,3 +113,7 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 
 ## 2026-11-04 13:00 — push retry
 - DECISION: WAL commit 2f106e4 pushed after GitHub 500 retries; no state change beyond the previous entry [source: git status main...origin/main]
+
+## 2026-11-04 13:03 — paste without prompt
+- fix: composer uses system PasteButton (no "Allow Paste?"), installed on iPhone [source: commit 9f9baba]
+- [unverified] terminal paste prompt comes from libghostty reading the clipboard; workaround is iOS Settings → Lasso → Paste from Other Apps → Allow
