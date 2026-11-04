@@ -64,7 +64,17 @@ enum IT {
         let created = try await store.client.createWorkspace(label: label)
         let ws = try #require(created["workspace"]?["workspace_id"]?.stringValue)
         let pane = try #require(created["root_pane"]?["pane_id"]?.stringValue)
-        try await waitUntil { store.snapshot.workspaces.contains { $0.label == label } }
+        do {
+            try await waitUntil { store.snapshot.workspaces.contains { $0.label == label } }
+        } catch {
+            let direct = try? await store.client.snapshot()
+            Issue.record("""
+            store missed workspace: phase=\(store.phase) lastUpdate=\(String(describing: store.lastUpdate)) \
+            herdr has it=\(direct?.workspaces.contains { $0.label == label } ?? false) \
+            store ws=\(store.snapshot.workspaces.map(\.label))
+            """)
+            throw error
+        }
 
         // Pretend an agent runs in the pane and becomes blocked.
         _ = try await store.client.call("pane.report_agent", .object([

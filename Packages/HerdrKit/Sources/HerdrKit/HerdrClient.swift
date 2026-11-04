@@ -246,7 +246,10 @@ public struct HerdrClient: Sendable {
                         switch try? HerdrMessage.decode(line: l) {
                         case let .event(name, data): cont.yield(HerdrEvent(name: name, data: data))
                         case let .failure(_, e): throw HerdrClientError.server(e)
-                        default: continue // subscribe ack and unknown lines
+                        // The ack means the subscription is live; surfacing it lets the store re-snapshot
+                        // after it, so a change between the first snapshot and the ack is not lost.
+                        case .result: cont.yield(HerdrEvent(name: "lasso.subscribed", data: .null))
+                        default: continue
                         }
                     }
                     cont.finish()

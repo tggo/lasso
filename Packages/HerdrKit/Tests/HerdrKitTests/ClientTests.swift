@@ -53,15 +53,16 @@ let snapshotJSON = #"""
     #expect(seen.value?["params"]?["keys"] == .array([.string("ctrl+c")]))
 }
 
-@Test func eventsStreamSkipsAckAndDecodes() async throws {
+@Test func eventsStreamMarksAckAndDecodes() async throws {
     let c = HerdrClient(transport: FakeTransport { _ in "" })
     var got: [HerdrEvent] = []
     for try await e in c.events(statusOf: ["w1:p1"]) {
         got.append(e)
     }
-    #expect(got.count == 1)
-    #expect(got[0].paneId == "w1:p1")
-    #expect(got[0].status == .blocked)
+    #expect(got.map(\.name).first == "lasso.subscribed") // ack: re-snapshot point
+    #expect(got.count == 2)
+    #expect(got[1].paneId == "w1:p1")
+    #expect(got[1].status == .blocked)
 }
 
 @Test func statusOrderPutsBlockedFirst() {
