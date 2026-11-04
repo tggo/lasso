@@ -84,8 +84,13 @@ public struct ClaudeTranscript: Sendable, Equatable {
     private mutating func addUser(_ id: String, _ text: String) {
         // Claude Code wraps slash commands, hook output and reminders in tags; those are not the person typing.
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty, !t.hasPrefix("<"), !t.hasPrefix("[Request interrupted") else { return }
+        guard !t.isEmpty, !Self.isWrapper(t), !t.hasPrefix("[Request interrupted") else { return }
         add(.user(id: id, text: t))
+    }
+
+    /// Tags Claude Code itself puts in user turns; a message the person starts with `<div>` is kept.
+    static func isWrapper(_ t: String) -> Bool {
+        ["<command-", "<local-command-", "<system-reminder", "<bash-", "<user-prompt-submit-hook", "<task-notification"].contains { t.hasPrefix($0) }
     }
 
     private mutating func add(_ item: ChatItem) { items.append(item) }

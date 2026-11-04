@@ -20,7 +20,7 @@ struct AgentDetailView: View {
     @State private var hasChat = false
     @State private var showScreen = false
     @FocusState private var composerFocused: Bool
-    @State private var images: [UIImage] = []
+    @State private var images: [Attachment] = []
     @State private var picked: [PhotosPickerItem] = []
     @State private var showPicker = false
     @State private var showPasteHint = false
@@ -59,11 +59,11 @@ struct AgentDetailView: View {
             if !images.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(images.indices, id: \.self) { i in
-                            Image(uiImage: images[i]).resizable().scaledToFill()
+                        ForEach(images) { att in
+                            Image(uiImage: att.image).resizable().scaledToFill()
                                 .frame(width: 56, height: 56).clipShape(RoundedRectangle(cornerRadius: 10))
                                 .overlay(alignment: .topTrailing) {
-                                    Button { images.remove(at: i) } label: {
+                                    Button { images.removeAll { $0.id == att.id } } label: {
                                         Image(systemName: "xmark.circle.fill").symbolRenderingMode(.palette)
                                             .foregroundStyle(.white, .black.opacity(0.6))
                                     }
@@ -79,7 +79,8 @@ struct AgentDetailView: View {
                 Menu {
                     Button { showPicker = true } label: { Label("Photo library", systemImage: "photo.on.rectangle") }
                     Button {
-                        if let img = UIPasteboard.general.image { images.append(img) }
+                        guard let img = UIPasteboard.general.image else { error = "No image on the clipboard."; return }
+                        images.append(Attachment(image: img))
                         if !pasteHintShown { pasteHintShown = true; showPasteHint = true }
                     } label: { Label("Paste image from clipboard", systemImage: "doc.on.clipboard") }
                 } label: {
@@ -103,12 +104,14 @@ struct AgentDetailView: View {
                     let text = draft, imgs = images
                     draft = ""
                     images = []
-                    send(restoring: text) {
+                    send(restoring: text, images: imgs) {
                         var paths: [String] = []
                         if !imgs.isEmpty {
                             guard let link = store.client.transport as? HostLink else { throw HerdrClientError.unsupported("image upload needs SSH") }
-                            for img in imgs {
-                                guard let data = img.jpegData(compressionQuality: 0.85) else { continue }
+                            for att in imgs {
+                                guard let data = att.image.jpegData(compressionQuality: 0.85) else {
+                                    throw HerdrClientError.unexpected("could not encode an image")
+                                }
                                 paths.append(try await link.upload(data, name: "\(UUID().uuidString).jpg"))
                             }
                         }
@@ -137,7 +140,7 @@ struct AgentDetailView: View {
         .onChange(of: picked) { _, items in
             Task { @MainActor in
                 for it in items {
-                    if let d = try? await it.loadTransferable(type: Data.self), let img = UIImage(data: d) { images.append(img) }
+                    if let d = try? await it.loadTransferable(type: Data.self), let img = UIImage(data: d) { images.append(Attachment(image: img)) }
                 }
                 picked = []
             }
@@ -173,10 +176,12 @@ struct AgentDetailView: View {
                 let a = store.agent(paneID)
                 if let pid = a?.pid, a?.agent == "claude-code", let link = store.client.transport as? HostLink {
                     var t = transcript, c = cursor
-                    let ok = try await link.readTranscript(pid: pid, into: &t, cursor: &c)
-                    if ok, t != transcript { transcript = t }
-                    cursor = c
-                    hasChat = ok
+                    // A failed or empty read keeps the chat already shown instead of flipping to the screen.
+                    if (try? await link.readTranscript(pid: pid, into: &t, cursor: &c)) == true {
+                        if t != transcript { transcript = t }
+                        cursor = c
+                        hasChat = true
+                    }
                 }
                 // The screen is still needed for a blocked dialog, the Screen view, and non-Claude panes.
                 if !hasChat || showScreen || a?.agentStatus == .blocked {
@@ -189,13 +194,14 @@ struct AgentDetailView: View {
         }
     }
 
-    private func send(restoring text: String? = nil, _ op: @escaping @MainActor () async throws -> Void) {
+    private func send(restoring text: String? = nil, images restore: [Attachment] = [], _ op: @escaping @MainActor () async throws -> Void) {
         sending = true
         Task { @MainActor in
             defer { sending = false }
             do { try await op(); error = nil } catch {
                 self.error = friendly(error)
                 if let text, draft.isEmpty { draft = text } // don't lose what was typed
+                if images.isEmpty { images = restore } // nor what was attached
             }
         }
     }
@@ -309,4 +315,10 @@ struct TerminalText: View {
             }
         }
     }
+}
+
+/// An image waiting in the composer; the id keeps thumbnails stable while others are removed.
+struct Attachment: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }

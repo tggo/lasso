@@ -25,6 +25,7 @@ public final class SessionStore {
     private var loop: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var refreshDirty = false
+    private var refreshGeneration = 0
     private var wake: CheckedContinuation<Void, Never>?
 
     public init(hostID: UUID, transport: HerdrTransport) {
@@ -123,6 +124,8 @@ public final class SessionStore {
     /// more snapshot follows.
     private func scheduleRefresh(delay: Double) {
         if refreshTask != nil { refreshDirty = true; return }
+        let gen = refreshGeneration &+ 1
+        refreshGeneration = gen
         refreshTask = Task { [weak self] in
             if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
             while let self, !Task.isCancelled {
@@ -130,7 +133,8 @@ public final class SessionStore {
                 if let s = try? await client.snapshot(), !Task.isCancelled { apply(s) }
                 if !refreshDirty { break }
             }
-            self?.refreshTask = nil
+            // A task cancelled by stop() must not clear the handle of one started after it.
+            if let self, refreshGeneration == gen { refreshTask = nil }
         }
     }
 

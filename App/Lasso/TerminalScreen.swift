@@ -138,7 +138,9 @@ final class BridgeState: @unchecked Sendable {
                     ext = "jpg"
                 }
                 let name = UUID().uuidString + "." + ext
-                if let remote = try? await link.upload(d, name: name) { out = out.replacingOccurrences(of: p, with: remote) }
+                // A failed upload types nothing rather than a phone path the host cannot open.
+                let remote = (try? await link.upload(d, name: name)) ?? ""
+                out = out.replacingOccurrences(of: p, with: remote)
             }
             pty?.write(paths.isEmpty ? data : Data(out.utf8))
         }

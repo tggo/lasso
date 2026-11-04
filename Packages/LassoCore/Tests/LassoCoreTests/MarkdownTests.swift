@@ -58,3 +58,8 @@ import Testing
     t.feed(Data(#"{"type":"user","uuid":"u1","isCompactSummary":true,"message":{"role":"user","content":"This session is being continued"}}"#.utf8 + [0x0A]))
     #expect(t.items == [.compacted(id: "u1", text: "This session is being continued")])
 }
+
+@Test func userHtmlIsKeptButWrappersAreNot() {
+    #expect(!ClaudeTranscript.isWrapper("<div> is not centered"))
+    #expect(ClaudeTranscript.isWrapper("<command-name>/clear</command-name>"))
+}
