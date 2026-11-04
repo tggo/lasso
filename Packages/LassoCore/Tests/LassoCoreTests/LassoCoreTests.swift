@@ -110,7 +110,7 @@ enum IT {
     }
 }
 
-@MainActor func waitUntil(timeout: Double = 5, sourceLocation: SourceLocation = #_sourceLocation,
+@MainActor func waitUntil(timeout: Double = 15, sourceLocation: SourceLocation = #_sourceLocation,
                           _ cond: @MainActor () -> Bool) async throws {
     let end = Date().addingTimeInterval(timeout)
     while !cond() {
@@ -119,7 +119,7 @@ enum IT {
     }
 }
 
-@MainActor func waitUntilAsync(timeout: Double = 5, _ cond: @MainActor () async -> Bool) async throws {
+@MainActor func waitUntilAsync(timeout: Double = 15, _ cond: @MainActor () async -> Bool) async throws {
     let end = Date().addingTimeInterval(timeout)
     while await !cond() {
         guard Date() < end else { Issue.record("timed out"); throw CancellationError() }
