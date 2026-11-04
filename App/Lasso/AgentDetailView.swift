@@ -23,6 +23,8 @@ struct AgentDetailView: View {
     @State private var images: [UIImage] = []
     @State private var picked: [PhotosPickerItem] = []
     @State private var showPicker = false
+    @State private var showPasteHint = false
+    @AppStorage("pasteHintShown") private var pasteHintShown = false
 
     var body: some View {
         let store = model.store(for: host)
@@ -76,15 +78,10 @@ struct AgentDetailView: View {
             HStack(alignment: .bottom, spacing: 6) {
                 Menu {
                     Button { showPicker = true } label: { Label("Photo library", systemImage: "photo.on.rectangle") }
-                    // The system Paste button reads the clipboard without iOS asking "Allow Paste?".
-                    PasteButton(supportedContentTypes: [.image]) { providers in
-                        for p in providers {
-                            _ = p.loadDataRepresentation(for: .image) { data, _ in
-                                guard let data, let img = UIImage(data: data) else { return }
-                                Task { @MainActor in images.append(img) }
-                            }
-                        }
-                    }
+                    Button {
+                        if let img = UIPasteboard.general.image { images.append(img) }
+                        if !pasteHintShown { pasteHintShown = true; showPasteHint = true }
+                    } label: { Label("Paste image from clipboard", systemImage: "doc.on.clipboard") }
                 } label: {
                     Image(systemName: "plus.circle.fill").font(.title).foregroundStyle(.secondary)
                         .frame(minWidth: 40, minHeight: 44)
@@ -126,6 +123,15 @@ struct AgentDetailView: View {
                     .accessibilityLabel("Send")
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
+        }
+        .alert("Paste without asking", isPresented: $showPasteHint) {
+            Button("Open Settings") {
+                if let u = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(u) }
+            }
+            Button("Later", role: .cancel) {}
+        } message: {
+            Text("iOS asks before every paste. To stop it: Settings → Lasso → Paste from Other Apps → Allow. "
+                + "This also covers pasting images in the terminal.")
         }
         .photosPicker(isPresented: $showPicker, selection: $picked, maxSelectionCount: 5, matching: .images)
         .onChange(of: picked) { _, items in
