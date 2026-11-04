@@ -90,3 +90,7 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 - done: agent output cleanup + lighter polling, installed on iPhone [source: commit 32a9eef, make test-ui green]
 - found: simulated phone load (app ls + terminal.read every 150 ms) adds no Herdr.app CPU, 1-4 ms per call; lag cause unknown [source: scratchpad load.py]
 - owner: reproduce the typing lag with the phone connected; 1 Hz CPU monitor is recording
+
+## 2026-11-04 11:03 — Claude chat view
+- done: Claude agents render as chat from ~/.claude JSONL (Heeler approach), base64 stripped on host, installed on iPhone [source: commit fd4575d, make test-ui 5-chat.png]
+- owner: still waiting for lag repro (monitor running)
