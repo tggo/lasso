@@ -146,3 +146,7 @@ Take the time from the clock, never type it: `printf '## %s · …\n' "$(date '+
 
 ## 2026-11-04 14:01 — CI flake closed
 - closed: CI 4/4 green on the subscribe-ack fix [source: CI run 41823863500 attempts 1–4]
+
+## 2026-11-05 07:42 — repo public
+- DECISION: github.com/tggo/lasso made PUBLIC on owner request [source: gh repo view → PUBLIC]
+- checked before: gitleaks 51 commits → 4 hits, all false positives (SSHKey code, manifest hash); no keys/tokens/Team ID in history; author email and "user ruslan" in WAL remain visible [source: gitleaks git .]
